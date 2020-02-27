@@ -140,10 +140,10 @@ struct plugin_ctx {
   char* object_name;    /* Restore Object Name */
   char* object;         /* Restore Object Content */
   PyThreadState*
-      interpreter;     /* Python interpreter for this instance of the plugin */
-  PyObject* pModule;   /* Python Module entry point */
-  PyObject* pDict;     /* Python Dictionary */
-  PyObject* bpContext; /* Python representation of plugin context */
+      interpreter;   /* Python interpreter for this instance of the plugin */
+  PyObject* pModule; /* Python Module entry point */
+  PyObject* pDict;   /* Python Dictionary */
+  PyObject* py_bpContext; /* Python representation of plugin context */
 };
 
 /**
@@ -213,19 +213,19 @@ bRC unloadPlugin()
  */
 static bRC newPlugin(bpContext* ctx)
 {
-  struct plugin_ctx* p_ctx;
+  struct plugin_ctx* plugin_context;
 
-  p_ctx = (struct plugin_ctx*)malloc(sizeof(struct plugin_ctx));
-  if (!p_ctx) { return bRC_Error; }
-  memset(p_ctx, 0, sizeof(struct plugin_ctx));
-  ctx->pContext = (void*)p_ctx; /* set our context pointer */
+  plugin_context = (struct plugin_ctx*)malloc(sizeof(struct plugin_ctx));
+  if (!plugin_context) { return bRC_Error; }
+  memset(plugin_context, 0, sizeof(struct plugin_ctx));
+  ctx->pContext = (void*)plugin_context; /* set our context pointer */
 
   /*
    * For each plugin instance we instantiate a new Python interpreter.
    */
   PyEval_AcquireThread(mainThreadState);
-  p_ctx->interpreter = Py_NewInterpreter();
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  plugin_context->interpreter = Py_NewInterpreter();
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
   /*
    * Always register some events the python plugin itself can register
@@ -245,40 +245,40 @@ static bRC newPlugin(bpContext* ctx)
  */
 static bRC freePlugin(bpContext* ctx)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { return bRC_Error; }
+  if (!plugin_context) { return bRC_Error; }
 
-  if (p_ctx->plugin_options) { free(p_ctx->plugin_options); }
+  if (plugin_context->plugin_options) { free(plugin_context->plugin_options); }
 
-  if (p_ctx->module_path) { free(p_ctx->module_path); }
+  if (plugin_context->module_path) { free(plugin_context->module_path); }
 
-  if (p_ctx->module_name) { free(p_ctx->module_name); }
+  if (plugin_context->module_name) { free(plugin_context->module_name); }
 
-  if (p_ctx->fname) { free(p_ctx->fname); }
+  if (plugin_context->fname) { free(plugin_context->fname); }
 
-  if (p_ctx->link) { free(p_ctx->link); }
+  if (plugin_context->link) { free(plugin_context->link); }
 
-  if (p_ctx->object_name) { free(p_ctx->object_name); }
+  if (plugin_context->object_name) { free(plugin_context->object_name); }
 
-  if (p_ctx->object) { free(p_ctx->object); }
+  if (plugin_context->object) { free(plugin_context->object); }
 
   /*
    * Stop any sub interpreter started per plugin instance.
    */
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
 
   /*
    * Do python cleanup calls.
    */
-  if (p_ctx->bpContext) { Py_DECREF(p_ctx->bpContext); }
+  if (plugin_context->py_bpContext) { Py_DECREF(plugin_context->py_bpContext); }
 
-  if (p_ctx->pModule) { Py_DECREF(p_ctx->pModule); }
+  if (plugin_context->pModule) { Py_DECREF(plugin_context->pModule); }
 
-  Py_EndInterpreter(p_ctx->interpreter);
+  Py_EndInterpreter(plugin_context->interpreter);
   PyEval_ReleaseLock();
 
-  free(p_ctx);
+  free(plugin_context);
   ctx->pContext = NULL;
 
   return bRC_OK;
@@ -290,14 +290,14 @@ static bRC freePlugin(bpContext* ctx)
  */
 static bRC getPluginValue(bpContext* ctx, pVariable var, void* value)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   bRC retval = bRC_Error;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyGetPluginValue(ctx, var, value);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -309,14 +309,14 @@ bail_out:
  */
 static bRC setPluginValue(bpContext* ctx, pVariable var, void* value)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   bRC retval = bRC_Error;
 
-  if (!p_ctx) { return bRC_Error; }
+  if (!plugin_context) { return bRC_Error; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PySetPluginValue(ctx, var, value);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
   return retval;
 }
@@ -330,9 +330,9 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
   bRC retval = bRC_Error;
   bool event_dispatched = false;
   PoolMem plugin_options(PM_FNAME);
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_context = (plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
   /*
    * First handle some events internally before calling python if it
@@ -340,10 +340,10 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
    */
   switch (event->eventType) {
     case bEventLevel:
-      p_ctx->backup_level = (int64_t)value;
+      plugin_context->backup_level = (int64_t)value;
       break;
     case bEventSince:
-      p_ctx->since = (int64_t)value;
+      plugin_context->since = (int64_t)value;
       break;
     case bEventBackupCommand:
       /*
@@ -365,9 +365,9 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
       /*
        * Free any previous value.
        */
-      if (p_ctx->plugin_options) {
-        free(p_ctx->plugin_options);
-        p_ctx->plugin_options = NULL;
+      if (plugin_context->plugin_options) {
+        free(plugin_context->plugin_options);
+        plugin_context->plugin_options = NULL;
       }
 
       event_dispatched = true;
@@ -376,7 +376,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
       /*
        * Save that we got a plugin override.
        */
-      p_ctx->plugin_options = strdup((char*)value);
+      plugin_context->plugin_options = strdup((char*)value);
       break;
     case bEventRestoreObject: {
       struct restore_object_pkt* rop;
@@ -387,7 +387,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
        * Only use the plugin definition of a restore object if we
        * didn't get any other plugin definition from some other source before.
        */
-      if (!p_ctx->python_loaded) {
+      if (!plugin_context->python_loaded) {
         if (rop && *rop->plugin_name) {
           event_dispatched = true;
           retval =
@@ -407,7 +407,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
    * processing was successfull (e.g. retval == bRC_OK).
    */
   if (!event_dispatched || retval == bRC_OK) {
-    PyEval_AcquireThread(p_ctx->interpreter);
+    PyEval_AcquireThread(plugin_context->interpreter);
 
     /*
      * Now dispatch the event to Python.
@@ -434,7 +434,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
         /*
          * See if we already loaded the Python modules.
          */
-        if (!p_ctx->python_loaded) {
+        if (!plugin_context->python_loaded) {
           retval = PyLoadModule(ctx, plugin_options.c_str());
         }
 
@@ -459,7 +459,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
           /*
            * See if we already loaded the Python modules.
            */
-          if (!p_ctx->python_loaded && *rop->plugin_name) {
+          if (!plugin_context->python_loaded && *rop->plugin_name) {
             retval = PyLoadModule(ctx, plugin_options.c_str());
 
             /*
@@ -484,7 +484,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
          * We only try to call Python when we loaded the right module until
          * that time we pretend the call succeeded.
          */
-        if (p_ctx->python_loaded) {
+        if (plugin_context->python_loaded) {
           retval = PyHandlePluginEvent(ctx, event, value);
         } else {
           retval = bRC_OK;
@@ -492,7 +492,7 @@ static bRC handlePluginEvent(bpContext* ctx, bEvent* event, void* value)
         break;
     }
 
-    PyEval_ReleaseThread(p_ctx->interpreter);
+    PyEval_ReleaseThread(plugin_context->interpreter);
   }
 
 bail_out:
@@ -509,19 +509,19 @@ bail_out:
 static bRC startBackupFile(bpContext* ctx, struct save_pkt* sp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyStartBackupFile(ctx, sp);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
   /*
    * For Incremental and Differential backups use checkChanges method to
    * see if we need to backup this file.
    */
-  switch (p_ctx->backup_level) {
+  switch (plugin_context->backup_level) {
     case L_INCREMENTAL:
     case L_DIFFERENTIAL:
       /*
@@ -529,7 +529,9 @@ static bRC startBackupFile(bpContext* ctx, struct save_pkt* sp)
        * from the bEventSince event we use that as basis for the actual
        * save_time to check.
        */
-      if (sp->save_time == 0 && p_ctx->since) { sp->save_time = p_ctx->since; }
+      if (sp->save_time == 0 && plugin_context->since) {
+        sp->save_time = plugin_context->since;
+      }
 
       switch (bfuncs->checkChanges(ctx, sp)) {
         case bRC_Seen:
@@ -557,13 +559,13 @@ bail_out:
 static bRC endBackupFile(bpContext* ctx)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyEndBackupFile(ctx);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -577,15 +579,15 @@ bail_out:
 static bRC pluginIO(bpContext* ctx, struct io_pkt* io)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  if (!p_ctx->python_loaded) { goto bail_out; }
+  if (!plugin_context->python_loaded) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyPluginIO(ctx, io);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -597,13 +599,13 @@ bail_out:
 static bRC startRestoreFile(bpContext* ctx, const char* cmd)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyStartRestoreFile(ctx, cmd);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -615,13 +617,13 @@ bail_out:
 static bRC endRestoreFile(bpContext* ctx)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyEndRestoreFile(ctx);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -637,13 +639,13 @@ bail_out:
 static bRC createFile(bpContext* ctx, struct restore_pkt* rp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyCreateFile(ctx, rp);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -656,13 +658,13 @@ bail_out:
 static bRC setFileAttributes(bpContext* ctx, struct restore_pkt* rp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PySetFileAttributes(ctx, rp);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -674,15 +676,15 @@ bail_out:
 static bRC checkFile(bpContext* ctx, char* fname)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  if (!p_ctx->python_loaded) { return bRC_OK; }
+  if (!plugin_context->python_loaded) { return bRC_OK; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyCheckFile(ctx, fname);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -693,13 +695,13 @@ bail_out:
 static bRC getAcl(bpContext* ctx, acl_pkt* ap)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyGetAcl(ctx, ap);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -710,13 +712,13 @@ bail_out:
 static bRC setAcl(bpContext* ctx, acl_pkt* ap)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PySetAcl(ctx, ap);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -727,13 +729,13 @@ bail_out:
 static bRC getXattr(bpContext* ctx, xattr_pkt* xp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PyGetXattr(ctx, xp);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -744,13 +746,13 @@ bail_out:
 static bRC setXattr(bpContext* ctx, xattr_pkt* xp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_context) { goto bail_out; }
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_context->interpreter);
   retval = PySetXattr(ctx, xp);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_context->interpreter);
 
 bail_out:
   return retval;
@@ -829,7 +831,7 @@ static bRC parse_plugin_definition(bpContext* ctx,
   bool keep_existing;
   PoolMem plugin_definition(PM_FNAME);
   char *bp, *argument, *argument_value;
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_context = (plugin_ctx*)ctx->pContext;
 
   if (!value) { return bRC_Error; }
 
@@ -845,13 +847,13 @@ static bRC parse_plugin_definition(bpContext* ctx,
     return bRC_Skip;
   }
 
-  keep_existing = (p_ctx->plugin_options) ? true : false;
+  keep_existing = (plugin_context->plugin_options) ? true : false;
 
   /*
    * Parse the plugin definition.
    * Make a private copy of the whole string.
    */
-  if (!p_ctx->python_loaded && p_ctx->plugin_options) {
+  if (!plugin_context->python_loaded && plugin_context->plugin_options) {
     int len;
 
     /*
@@ -861,8 +863,8 @@ static bRC parse_plugin_definition(bpContext* ctx,
      * with the first argument being the pluginname removed as that is already
      * part of the other plugin option string.
      */
-    len = strlen(p_ctx->plugin_options);
-    PmStrcpy(plugin_definition, p_ctx->plugin_options);
+    len = strlen(plugin_context->plugin_options);
+    PmStrcpy(plugin_definition, plugin_context->plugin_options);
 
     bp = strchr((char*)value, ':');
     if (!bp) {
@@ -876,7 +878,7 @@ static bRC parse_plugin_definition(bpContext* ctx,
     /*
      * See if option string end with ':'
      */
-    if (p_ctx->plugin_options[len - 1] != ':') {
+    if (plugin_context->plugin_options[len - 1] != ':') {
       PmStrcat(plugin_definition, (char*)bp);
     } else {
       PmStrcat(plugin_definition, (char*)bp + 1);
@@ -945,10 +947,10 @@ static bRC parse_plugin_definition(bpContext* ctx,
 
         switch (plugin_arguments[i].type) {
           case argument_module_path:
-            str_destination = &p_ctx->module_path;
+            str_destination = &plugin_context->module_path;
             break;
           case argument_module_name:
-            str_destination = &p_ctx->module_name;
+            str_destination = &plugin_context->module_name;
             break;
           default:
             break;
@@ -1125,59 +1127,60 @@ static void PyErrorHandler(bpContext* ctx, int msgtype)
 static bRC PyLoadModule(bpContext* ctx, void* value)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject *sysPath, *mPath, *pName, *pFunc;
 
   /*
    * See if we already setup the python search path.
    */
-  if (!p_ctx->python_path_set) {
+  if (!plugin_context->python_path_set) {
     /*
      * Extend the Python search path with the given module_path.
      */
-    if (p_ctx->module_path) {
+    if (plugin_context->module_path) {
       sysPath = PySys_GetObject((char*)"path");
-      mPath = PyString_FromString(p_ctx->module_path);
+      mPath = PyString_FromString(plugin_context->module_path);
       PyList_Append(sysPath, mPath);
       Py_DECREF(mPath);
-      p_ctx->python_path_set = true;
+      plugin_context->python_path_set = true;
     }
   }
 
   /*
    * Try to load the Python module by name.
    */
-  if (p_ctx->module_name) {
+  if (plugin_context->module_name) {
     Dmsg(ctx, debuglevel, "python-fd: Trying to load module with name %s\n",
-         p_ctx->module_name);
-    pName = PyString_FromString(p_ctx->module_name);
-    p_ctx->pModule = PyImport_Import(pName);
+         plugin_context->module_name);
+    pName = PyString_FromString(plugin_context->module_name);
+    plugin_context->pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
-    if (!p_ctx->pModule) {
+    if (!plugin_context->pModule) {
       Dmsg(ctx, debuglevel, "python-fd: Failed to load module with name %s\n",
-           p_ctx->module_name);
+           plugin_context->module_name);
       goto bail_out;
     }
 
     Dmsg(ctx, debuglevel,
          "python-fd: Successfully loaded module with name %s\n",
-         p_ctx->module_name);
+         plugin_context->module_name);
 
     /*
      * Get the Python dictionary for lookups in the Python namespace.
      */
-    p_ctx->pDict = PyModule_GetDict(p_ctx->pModule); /* Borrowed reference */
+    plugin_context->pDict =
+        PyModule_GetDict(plugin_context->pModule); /* Borrowed reference */
 
     /*
      * Encode the bpContext so a Python method can pass it in on calling back.
      */
-    p_ctx->bpContext = PyCreatebpContext(ctx);
+    plugin_context->py_bpContext = PyCreatebpContext(ctx);
 
     /*
      * Lookup the load_bareos_plugin() function in the python module.
      */
-    pFunc = PyDict_GetItemString(p_ctx->pDict,
+    pFunc = PyDict_GetItemString(plugin_context->pDict,
                                  "load_bareos_plugin"); /* Borrowed reference */
     if (pFunc && PyCallable_Check(pFunc)) {
       PyObject *pPluginDefinition, *pRetVal;
@@ -1185,8 +1188,8 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
       pPluginDefinition = PyString_FromString((char*)value);
       if (!pPluginDefinition) { goto bail_out; }
 
-      pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
-                                             pPluginDefinition, NULL);
+      pRetVal = PyObject_CallFunctionObjArgs(
+          pFunc, plugin_context->py_bpContext, pPluginDefinition, NULL);
       Py_DECREF(pPluginDefinition);
 
       if (!pRetVal) {
@@ -1204,7 +1207,7 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
     /*
      * Keep track we successfully loaded.
      */
-    p_ctx->python_loaded = true;
+    plugin_context->python_loaded = true;
   }
 
   return retval;
@@ -1226,21 +1229,22 @@ bail_out:
 static bRC PyParsePluginDefinition(bpContext* ctx, void* value)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the parse_plugin_definition() function in the python module.
    */
-  pFunc = PyDict_GetItemString(
-      p_ctx->pDict, "parse_plugin_definition"); /* Borrowed reference */
+  pFunc =
+      PyDict_GetItemString(plugin_context->pDict,
+                           "parse_plugin_definition"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pPluginDefinition, *pRetVal;
 
     pPluginDefinition = PyString_FromString((char*)value);
     if (!pPluginDefinition) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            pPluginDefinition, NULL);
     Py_DECREF(pPluginDefinition);
 
@@ -1278,21 +1282,21 @@ static bRC PySetPluginValue(bpContext* ctx, pVariable var, void* value)
 static bRC PyHandlePluginEvent(bpContext* ctx, bEvent* event, void* value)
 {
   bRC retval = bRC_Error;
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_context = (plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the handle_plugin_event() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "handle_plugin_event"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pEventType, *pRetVal;
 
     pEventType = PyInt_FromLong(event->eventType);
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pEventType, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pEventType, NULL);
     Py_DECREF(pEventType);
 
     if (!pRetVal) {
@@ -1401,7 +1405,7 @@ static inline PySavePacket* NativeToPySavePacket(struct save_pkt* sp)
 
 static inline bool PySavePacketToNative(PySavePacket* pSavePkt,
                                         struct save_pkt* sp,
-                                        struct plugin_ctx* p_ctx,
+                                        struct plugin_ctx* plugin_context,
                                         bool is_options_plugin)
 {
   /*
@@ -1417,9 +1421,9 @@ static inline bool PySavePacketToNative(PySavePacket* pSavePkt,
        * our plugin context.
        */
       if (PyString_Check(pSavePkt->fname)) {
-        if (p_ctx->fname) { free(p_ctx->fname); }
-        p_ctx->fname = strdup(PyString_AsString(pSavePkt->fname));
-        sp->fname = p_ctx->fname;
+        if (plugin_context->fname) { free(plugin_context->fname); }
+        plugin_context->fname = strdup(PyString_AsString(pSavePkt->fname));
+        sp->fname = plugin_context->fname;
       }
     } else {
       goto bail_out;
@@ -1434,9 +1438,9 @@ static inline bool PySavePacketToNative(PySavePacket* pSavePkt,
        * our plugin context.
        */
       if (PyString_Check(pSavePkt->link)) {
-        if (p_ctx->link) { free(p_ctx->link); }
-        p_ctx->link = strdup(PyString_AsString(pSavePkt->link));
-        sp->link = p_ctx->link;
+        if (plugin_context->link) { free(plugin_context->link); }
+        plugin_context->link = strdup(PyString_AsString(pSavePkt->link));
+        sp->link = plugin_context->link;
       }
     }
 
@@ -1484,18 +1488,21 @@ static inline bool PySavePacketToNative(PySavePacket* pSavePkt,
             PyByteArray_Check(pSavePkt->object)) {
           char* buf;
 
-          if (p_ctx->object_name) { free(p_ctx->object_name); }
-          p_ctx->object_name = strdup(PyString_AsString(pSavePkt->object_name));
-          sp->object_name = p_ctx->object_name;
+          if (plugin_context->object_name) {
+            free(plugin_context->object_name);
+          }
+          plugin_context->object_name =
+              strdup(PyString_AsString(pSavePkt->object_name));
+          sp->object_name = plugin_context->object_name;
 
           sp->object_len = pSavePkt->object_len;
           sp->index = pSavePkt->object_index;
 
           if ((buf = PyByteArray_AsString(pSavePkt->object))) {
-            if (p_ctx->object) { free(p_ctx->object); }
-            p_ctx->object = (char*)malloc(pSavePkt->object_len);
-            memcpy(p_ctx->object, buf, pSavePkt->object_len);
-            sp->object = p_ctx->object;
+            if (plugin_context->object) { free(plugin_context->object); }
+            plugin_context->object = (char*)malloc(pSavePkt->object_len);
+            memcpy(plugin_context->object, buf, pSavePkt->object_len);
+            sp->object = plugin_context->object;
           } else {
             goto bail_out;
           }
@@ -1546,13 +1553,13 @@ bail_out:
 static bRC PyStartBackupFile(bpContext* ctx, struct save_pkt* sp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the start_backup_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "start_backup_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PySavePacket* pSavePkt;
@@ -1561,7 +1568,7 @@ static bRC PyStartBackupFile(bpContext* ctx, struct save_pkt* sp)
     pSavePkt = NativeToPySavePacket(sp);
     if (!pSavePkt) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            (PyObject*)pSavePkt, NULL);
     if (!pRetVal) {
       Py_DECREF((PyObject*)pSavePkt);
@@ -1570,7 +1577,7 @@ static bRC PyStartBackupFile(bpContext* ctx, struct save_pkt* sp)
       retval = conv_python_retval(pRetVal);
       Py_DECREF(pRetVal);
 
-      if (!PySavePacketToNative(pSavePkt, sp, p_ctx, false)) {
+      if (!PySavePacketToNative(pSavePkt, sp, plugin_context, false)) {
         Py_DECREF((PyObject*)pSavePkt);
         goto bail_out;
       }
@@ -1598,18 +1605,19 @@ bail_out:
 static bRC PyEndBackupFile(bpContext* ctx)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the end_backup_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "end_backup_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject* pRetVal;
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, NULL);
+    pRetVal =
+        PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext, NULL);
     if (!pRetVal) {
       goto bail_out;
     } else {
@@ -1706,14 +1714,14 @@ static inline bool PyIoPacketToNative(PyIoPacket* pIoPkt, struct io_pkt* io)
 static bRC PyPluginIO(bpContext* ctx, struct io_pkt* io)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the plugin_io() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "plugin_io"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "plugin_io"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyIoPacket* pIoPkt;
     PyObject* pRetVal;
@@ -1721,7 +1729,7 @@ static bRC PyPluginIO(bpContext* ctx, struct io_pkt* io)
     pIoPkt = NativeToPyIoPacket(io);
     if (!pIoPkt) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            (PyObject*)pIoPkt, NULL);
     if (!pRetVal) {
       Py_DECREF((PyObject*)pIoPkt);
@@ -1758,13 +1766,13 @@ bail_out:
 static bRC PyStartRestoreFile(bpContext* ctx, const char* cmd)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the start_restore_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "start_restore_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pCmd, *pRetVal;
@@ -1772,7 +1780,8 @@ static bRC PyStartRestoreFile(bpContext* ctx, const char* cmd)
     pCmd = PyString_FromString(cmd);
     if (!pCmd) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pCmd, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pCmd, NULL);
     Py_DECREF(pCmd);
 
     if (!pRetVal) {
@@ -1800,18 +1809,19 @@ bail_out:
 static bRC PyEndRestoreFile(bpContext* ctx)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the end_restore_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "end_restore_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject* pRetVal;
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, NULL);
+    pRetVal =
+        PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext, NULL);
     if (!pRetVal) {
       goto bail_out;
     } else {
@@ -1880,7 +1890,7 @@ static inline void PyRestorePacketToNative(PyRestorePacket* pRestorePacket,
 static bRC PyCreateFile(bpContext* ctx, struct restore_pkt* rp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!rp) { return bRC_Error; }
@@ -1888,7 +1898,7 @@ static bRC PyCreateFile(bpContext* ctx, struct restore_pkt* rp)
   /*
    * Lookup the create_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "create_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyRestorePacket* pRestorePacket;
@@ -1897,7 +1907,7 @@ static bRC PyCreateFile(bpContext* ctx, struct restore_pkt* rp)
     pRestorePacket = NativeToPyRestorePacket(rp);
     if (!pRestorePacket) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            pRestorePacket, NULL);
     if (!pRetVal) {
       Py_DECREF(pRestorePacket);
@@ -1925,7 +1935,7 @@ bail_out:
 static bRC PySetFileAttributes(bpContext* ctx, struct restore_pkt* rp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!rp) { return bRC_Error; }
@@ -1933,7 +1943,7 @@ static bRC PySetFileAttributes(bpContext* ctx, struct restore_pkt* rp)
   /*
    * Lookup the set_file_attributes() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "set_file_attributes"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyRestorePacket* pRestorePacket;
@@ -1942,7 +1952,7 @@ static bRC PySetFileAttributes(bpContext* ctx, struct restore_pkt* rp)
     pRestorePacket = NativeToPyRestorePacket(rp);
     if (!pRestorePacket) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            pRestorePacket, NULL);
     if (!pRetVal) {
       Py_DECREF(pRestorePacket);
@@ -1968,7 +1978,7 @@ bail_out:
 static bRC PyCheckFile(bpContext* ctx, char* fname)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!fname) { return bRC_Error; }
@@ -1976,14 +1986,14 @@ static bRC PyCheckFile(bpContext* ctx, char* fname)
   /*
    * Lookup the check_file() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "check_file"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "check_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pFname, *pRetVal;
 
     pFname = PyString_FromString(fname);
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pFname, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pFname, NULL);
     Py_DECREF(pFname);
 
     if (!pRetVal) {
@@ -2048,7 +2058,7 @@ static inline bool PyAclPacketToNative(PyAclPacket* pAclPacket,
 static bRC PyGetAcl(bpContext* ctx, acl_pkt* ap)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!ap) { return bRC_Error; }
@@ -2056,8 +2066,8 @@ static bRC PyGetAcl(bpContext* ctx, acl_pkt* ap)
   /*
    * Lookup the get_acl() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "get_acl"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "get_acl"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyAclPacket* pAclPkt;
     PyObject* pRetVal;
@@ -2065,8 +2075,8 @@ static bRC PyGetAcl(bpContext* ctx, acl_pkt* ap)
     pAclPkt = NativeToPyAclPacket(ap);
     if (!pAclPkt) { goto bail_out; }
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pAclPkt, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pAclPkt, NULL);
     if (!pRetVal) {
       Py_DECREF((PyObject*)pAclPkt);
       goto bail_out;
@@ -2096,7 +2106,7 @@ bail_out:
 static bRC PySetAcl(bpContext* ctx, acl_pkt* ap)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!ap) { return bRC_Error; }
@@ -2104,8 +2114,8 @@ static bRC PySetAcl(bpContext* ctx, acl_pkt* ap)
   /*
    * Lookup the set_acl() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "set_acl"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "set_acl"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyAclPacket* pAclPkt;
     PyObject* pRetVal;
@@ -2113,8 +2123,8 @@ static bRC PySetAcl(bpContext* ctx, acl_pkt* ap)
     pAclPkt = NativeToPyAclPacket(ap);
     if (!pAclPkt) { goto bail_out; }
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pAclPkt, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pAclPkt, NULL);
     Py_DECREF(pAclPkt);
 
     if (!pRetVal) {
@@ -2202,7 +2212,7 @@ static inline bool PyXattrPacketToNative(PyXattrPacket* pXattrPacket,
 static bRC PyGetXattr(bpContext* ctx, xattr_pkt* xp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!xp) { return bRC_Error; }
@@ -2210,8 +2220,8 @@ static bRC PyGetXattr(bpContext* ctx, xattr_pkt* xp)
   /*
    * Lookup the get_xattr() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "get_xattr"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "get_xattr"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyXattrPacket* pXattrPkt;
     PyObject* pRetVal;
@@ -2219,8 +2229,8 @@ static bRC PyGetXattr(bpContext* ctx, xattr_pkt* xp)
     pXattrPkt = NativeToPyXattrPacket(xp);
     if (!pXattrPkt) { goto bail_out; }
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pXattrPkt, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pXattrPkt, NULL);
     if (!pRetVal) {
       Py_DECREF((PyObject*)pXattrPkt);
       goto bail_out;
@@ -2250,7 +2260,7 @@ bail_out:
 static bRC PySetXattr(bpContext* ctx, xattr_pkt* xp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!xp) { return bRC_Error; }
@@ -2258,8 +2268,8 @@ static bRC PySetXattr(bpContext* ctx, xattr_pkt* xp)
   /*
    * Lookup the set_acl() function in the python module.
    */
-  pFunc =
-      PyDict_GetItemString(p_ctx->pDict, "set_xattr"); /* Borrowed reference */
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
+                               "set_xattr"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyXattrPacket* pXattrPkt;
     PyObject* pRetVal;
@@ -2267,8 +2277,8 @@ static bRC PySetXattr(bpContext* ctx, xattr_pkt* xp)
     pXattrPkt = NativeToPyXattrPacket(xp);
     if (!pXattrPkt) { goto bail_out; }
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pXattrPkt, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pXattrPkt, NULL);
     Py_DECREF(pXattrPkt);
 
     if (!pRetVal) {
@@ -2315,7 +2325,7 @@ static inline PyRestoreObject* NativeToPyRestoreObject(
 static bRC PyRestoreObjectData(bpContext* ctx, struct restore_object_pkt* rop)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!rop) { return bRC_OK; }
@@ -2323,7 +2333,7 @@ static bRC PyRestoreObjectData(bpContext* ctx, struct restore_object_pkt* rop)
   /*
    * Lookup the restore_object_data() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "restore_object_data"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyRestoreObject* pRestoreObject;
@@ -2332,7 +2342,7 @@ static bRC PyRestoreObjectData(bpContext* ctx, struct restore_object_pkt* rop)
     pRestoreObject = NativeToPyRestoreObject(rop);
     if (!pRestoreObject) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
                                            pRestoreObject, NULL);
     Py_DECREF(pRestoreObject);
 
@@ -2358,7 +2368,7 @@ bail_out:
 static bRC PyHandleBackupFile(bpContext* ctx, struct save_pkt* sp)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_context = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   if (!sp) { return bRC_Error; }
@@ -2366,7 +2376,7 @@ static bRC PyHandleBackupFile(bpContext* ctx, struct save_pkt* sp)
   /*
    * Lookup the handle_backup_file() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_context->pDict,
                                "handle_backup_file"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PySavePacket* pSavePkt;
@@ -2375,8 +2385,8 @@ static bRC PyHandleBackupFile(bpContext* ctx, struct save_pkt* sp)
     pSavePkt = NativeToPySavePacket(sp);
     if (!pSavePkt) { goto bail_out; }
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pSavePkt, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_context->py_bpContext,
+                                           pSavePkt, NULL);
     if (!pRetVal) {
       Py_DECREF((PyObject*)pSavePkt);
       goto bail_out;
@@ -2384,7 +2394,7 @@ static bRC PyHandleBackupFile(bpContext* ctx, struct save_pkt* sp)
       retval = conv_python_retval(pRetVal);
       Py_DECREF(pRetVal);
 
-      if (!PySavePacketToNative(pSavePkt, sp, p_ctx, true)) {
+      if (!PySavePacketToNative(pSavePkt, sp, plugin_context, true)) {
         Py_DECREF((PyObject*)pSavePkt);
         goto bail_out;
       }

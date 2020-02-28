@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # BAREOS - Backup Archiving REcovery Open Sourced
 #
-# Copyright (C) 2014-2014 Bareos GmbH & Co. KG
+# Copyright (C) 2014-2020 Bareos GmbH & Co. KG
 #
 # This program is Free Software; you can redistribute it and/or
 # modify it under the terms of version three of the GNU Affero General Public
@@ -36,7 +36,6 @@ class BareosFdPluginBaseclass(object):
 
     def __init__(self, context, plugindef, mandatory_options=None):
         bareosfd.DebugMessage(
-            context,
             100,
             "Constructor called in module %s with plugindef=%s\n"
             % (__name__, plugindef),

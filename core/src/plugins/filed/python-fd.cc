@@ -226,26 +226,24 @@ bRC unloadPlugin()
  */
 static bRC newPlugin(bpContext* bareos_plugin_ctx)
 {
-  struct plugin_private_context* plugin_priv_ctx;
+  struct plugin_private_context* plugin_priv_ctx =
+      (struct plugin_private_context*)malloc(
+          sizeof(struct plugin_private_context));
 
-  plugin_priv_ctx = (struct plugin_private_context*)malloc(
-      sizeof(struct plugin_private_context));
   if (!plugin_priv_ctx) { return bRC_Error; }
+
   memset(plugin_priv_ctx, 0, sizeof(struct plugin_private_context));
+
   bareos_plugin_ctx->pContext =
       (void*)plugin_priv_ctx; /* set our context pointer */
 
-  /*
-   * For each plugin instance we instantiate a new Python interpreter.
-   */
+  /* For each plugin instance we instantiate a new Python interpreter. */
   PyEval_AcquireThread(mainThreadState);
   plugin_priv_ctx->interpreter = Py_NewInterpreter();
   PyEval_ReleaseThread(plugin_priv_ctx->interpreter);
 
-  /*
-   * Always register some events the python plugin itself can register
-   * any other events it is interested in.
-   */
+  /* Always register some events the python plugin itself can register
+     any other events it is interested in. */
   bfuncs->registerBareosEvents(
       bareos_plugin_ctx, 9, bEventLevel, bEventSince, bEventNewPluginOptions,
       bEventPluginCommand, bEventJobStart, bEventRestoreCommand,
@@ -1074,11 +1072,12 @@ static PyObject* PyCreatebpContext(bpContext* bareos_plugin_ctx)
 
 static bpContext* PyGetbpContext(PyObject* pyCtx)
 {
-  bpContext* retval =
-      (bpContext*)PyCapsule_GetPointer(pyCtx, "bareos.bpContext");
-  Dmsg(retval, 10, "PyGetbpContext:    bpContext is: %p\n", retval);
-  Jmsg(retval, M_INFO, "PyGetbpContext:    bpContext is: %p\n", retval);
-  return retval;
+  bpContext** retval = (bpContext**)PyCapsule_Import("bareosfd.bpContext", 0);
+
+  /*     (bpContext*)PyCapsule_GetPointer(pyCtx, "bareos.bpContext"); */
+  Dmsg(*retval, 10, "PyGetbpContext:    bpContext is: %p\n", retval);
+  Jmsg(*retval, M_INFO, "PyGetbpContext:    bpContext is: %p\n", retval);
+  return *retval;
 }
 
 /**
@@ -1152,7 +1151,7 @@ static void PyErrorHandler(bpContext* bareos_plugin_ctx, int msgtype)
 /**
  * Initial load of the Python module.
  *
- * Based on the parsed plugin options we set some prerequisits like the
+ * Based on the parsed plugin options we set some prerequisites like the
  * module path and the module to load. We also load the dictionary used
  * for looking up the Python methods.
  */
@@ -1163,13 +1162,9 @@ static bRC PyLoadModule(bpContext* bareos_plugin_ctx, void* value)
       (struct plugin_private_context*)bareos_plugin_ctx->pContext;
   PyObject *sysPath, *mPath, *pName, *pFunc;
 
-  /*
-   * See if we already setup the python search path.
-   */
+  /* See if we already setup the python search path.  */
   if (!plugin_priv_ctx->python_path_set) {
-    /*
-     * Extend the Python search path with the given module_path.
-     */
+    /* Extend the Python search path with the given module_path.  */
     if (plugin_priv_ctx->module_path) {
       sysPath = PySys_GetObject((char*)"path");
       mPath = PyString_FromString(plugin_priv_ctx->module_path);
@@ -1179,9 +1174,7 @@ static bRC PyLoadModule(bpContext* bareos_plugin_ctx, void* value)
     }
   }
 
-  /*
-   * Try to load the Python module by name.
-   */
+  /* Try to load the Python module by name. */
   if (plugin_priv_ctx->module_name) {
     Dmsg(bareos_plugin_ctx, debuglevel,
          "python-fd: Trying to load module with name %s\n",
@@ -1201,22 +1194,24 @@ static bRC PyLoadModule(bpContext* bareos_plugin_ctx, void* value)
          "python-fd: Successfully loaded module with name %s\n",
          plugin_priv_ctx->module_name);
 
-    /*
-     * Get the Python dictionary for lookups in the Python namespace.
-     */
+    /* Get the Python dictionary for lookups in the Python namespace.  */
     plugin_priv_ctx->pyModuleFunctionsDict =
         PyModule_GetDict(plugin_priv_ctx->pModule); /* Borrowed reference */
 
-    /*
-     * Encode the bpContext so a Python method can pass it in on calling back.
-     */
+    /* Encode the bpContext so a Python method can pass it in on calling back.*/
     plugin_priv_ctx->py_bpContext = PyCreatebpContext(bareos_plugin_ctx);
 
-    void* ctx_from_bareosfd_module = PyCapsule_Import("bareosfd.bpContext", 0);
-
-    /*
-     * Lookup the load_bareos_plugin() function in the python module.
+    /* get the pointer to the module variable that is exported via the
+     * capsule
      */
+    bpContext** bareosfd_bpContext =
+        (bpContext**)PyCapsule_Import("bareosfd.bpContext", 0);
+
+    /* set the bareosfd.bpContext capsule pointer to point to bareos_plugin_ctx
+     */
+    *bareosfd_bpContext = bareos_plugin_ctx;
+
+    /* Lookup the load_bareos_plugin() function in the python module.  */
     pFunc = PyDict_GetItemString(plugin_priv_ctx->pyModuleFunctionsDict,
                                  "load_bareos_plugin"); /* Borrowed reference */
     if (pFunc && PyCallable_Check(pFunc)) {

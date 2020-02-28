@@ -758,6 +758,7 @@ static PyMethodDef BareosFDMethods[] = {
 #define MOD_DEF(ob, name, doc, methods) ob = Py_InitModule3(name, methods, doc);
 #endif
 
+static void* bareos_plugin_context = NULL;
 
 MOD_INIT(bareosfd)
 {
@@ -766,7 +767,6 @@ MOD_INIT(bareosfd)
    * set after loading the bareosfd binary python module and will be used for
    * all calls.
    */
-  static void* bareos_plugin_context = NULL;
 
   PyObject* BareosFdModule = NULL;
 

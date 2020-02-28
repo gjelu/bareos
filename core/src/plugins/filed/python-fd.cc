@@ -1058,49 +1058,28 @@ bail_out:
   return bRC_Error;
 }
 
-/**
- * Work around API changes in Python versions.
- * These function abstract the storage and retrieval of the bpContext
- * which is passed to the Python methods and which the method can pass
- * back and which allow the callback function to understand what bpContext
- * its talking about.
- */
-#if ((PY_VERSION_HEX < 0x02070000) || \
-     ((PY_VERSION_HEX >= 0x03000000) && (PY_VERSION_HEX < 0x03010000)))
-/**
- * Python version before 2.7 and 3.0.
- */
-static PyObject* PyCreatebpContext(bpContext* bareos_plugin_ctx)
-{
-  /*
-   * Setup a new CObject which holds the bpContext structure used here
-   * internally.
-   */
-  return PyCObject_FromVoidPtr((void*)bareos_plugin_ctx, NULL);
-}
-
-static bpContext* PyGetbpContext(PyObject* pyCtx)
-{
-  return (bpContext*)PyCObject_AsVoidPtr(pyCtx);
-}
-#else
-/**
- * Python version after 2.6 and 3.1.
- */
 static PyObject* PyCreatebpContext(bpContext* bareos_plugin_ctx)
 {
   /*
    * Setup a new Capsule which holds the bpContext structure used here
    * internally.
    */
+  printf("PyCreatebpContext: bpContext is: %p\n", bareos_plugin_ctx);
+  Dmsg(bareos_plugin_ctx, 10, "PyGetbpContext:    bpContext is: %p",
+       bareos_plugin_ctx);
+  Jmsg(bareos_plugin_ctx, M_INFO, "PyGetbpContext:    bpContext is: %p",
+       bareos_plugin_ctx);
   return PyCapsule_New((void*)bareos_plugin_ctx, "bareos.bpContext", NULL);
 }
 
 static bpContext* PyGetbpContext(PyObject* pyCtx)
 {
-  return (bpContext*)PyCapsule_GetPointer(pyCtx, "bareos.bpContext");
+  bpContext* retval =
+      (bpContext*)PyCapsule_GetPointer(pyCtx, "bareos.bpContext");
+  Dmsg(retval, 10, "PyGetbpContext:    bpContext is: %p\n", retval);
+  Jmsg(retval, M_INFO, "PyGetbpContext:    bpContext is: %p\n", retval);
+  return retval;
 }
-#endif
 
 /**
  * Convert a return value into a bRC enum value.

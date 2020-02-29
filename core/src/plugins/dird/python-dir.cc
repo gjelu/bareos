@@ -107,10 +107,10 @@ struct plugin_ctx {
   char* module_path;    /* Plugin Module Path */
   char* module_name;    /* Plugin Module Name */
   PyThreadState*
-      interpreter;     /* Python interpreter for this instance of the plugin */
-  PyObject* pModule;   /* Python Module entry point */
-  PyObject* pDict;     /* Python Dictionary */
-  PyObject* bpContext; /* Python representation of plugin context */
+      interpreter;   /* Python interpreter for this instance of the plugin */
+  PyObject* pModule; /* Python Module entry point */
+  PyObject* pyModuleFunctionsDict; /* Python Dictionary */
+  PyObject* py_bpContext;          /* Python representation of plugin context */
 };
 
 /**
@@ -177,19 +177,19 @@ bRC unloadPlugin()
 
 static bRC newPlugin(bpContext* ctx)
 {
-  struct plugin_ctx* p_ctx;
+  struct plugin_ctx* plugin_priv_ctx;
 
-  p_ctx = (struct plugin_ctx*)malloc(sizeof(struct plugin_ctx));
-  if (!p_ctx) { return bRC_Error; }
-  memset(p_ctx, 0, sizeof(struct plugin_ctx));
-  ctx->pContext = (void*)p_ctx; /* set our context pointer */
+  plugin_priv_ctx = (struct plugin_ctx*)malloc(sizeof(struct plugin_ctx));
+  if (!plugin_priv_ctx) { return bRC_Error; }
+  memset(plugin_priv_ctx, 0, sizeof(struct plugin_ctx));
+  ctx->pContext = (void*)plugin_priv_ctx; /* set our context pointer */
 
   /*
    * For each plugin instance we instantiate a new Python interpreter.
    */
   PyEval_AcquireThread(mainThreadState);
-  p_ctx->interpreter = Py_NewInterpreter();
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  plugin_priv_ctx->interpreter = Py_NewInterpreter();
+  PyEval_ReleaseThread(plugin_priv_ctx->interpreter);
 
   /*
    * Always register some events the python plugin itself can register
@@ -202,26 +202,28 @@ static bRC newPlugin(bpContext* ctx)
 
 static bRC freePlugin(bpContext* ctx)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_priv_ctx = (struct plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { return bRC_Error; }
+  if (!plugin_priv_ctx) { return bRC_Error; }
 
   /*
    * Stop any sub interpreter started per plugin instance.
    */
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_priv_ctx->interpreter);
 
   /*
    * Do python cleanup calls.
    */
-  if (p_ctx->bpContext) { Py_DECREF(p_ctx->bpContext); }
+  if (plugin_priv_ctx->py_bpContext) {
+    Py_DECREF(plugin_priv_ctx->py_bpContext);
+  }
 
-  if (p_ctx->pModule) { Py_DECREF(p_ctx->pModule); }
+  if (plugin_priv_ctx->pModule) { Py_DECREF(plugin_priv_ctx->pModule); }
 
-  Py_EndInterpreter(p_ctx->interpreter);
+  Py_EndInterpreter(plugin_priv_ctx->interpreter);
   PyEval_ReleaseLock();
 
-  free(p_ctx);
+  free(plugin_priv_ctx);
   ctx->pContext = NULL;
 
   return bRC_OK;
@@ -229,24 +231,24 @@ static bRC freePlugin(bpContext* ctx)
 
 static bRC getPluginValue(bpContext* ctx, pDirVariable var, void* value)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_priv_ctx = (struct plugin_ctx*)ctx->pContext;
   bRC retval = bRC_Error;
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_priv_ctx->interpreter);
   retval = PyGetPluginValue(ctx, var, value);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_priv_ctx->interpreter);
 
   return retval;
 }
 
 static bRC setPluginValue(bpContext* ctx, pDirVariable var, void* value)
 {
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_priv_ctx = (struct plugin_ctx*)ctx->pContext;
   bRC retval = bRC_Error;
 
-  PyEval_AcquireThread(p_ctx->interpreter);
+  PyEval_AcquireThread(plugin_priv_ctx->interpreter);
   retval = PySetPluginValue(ctx, var, value);
-  PyEval_ReleaseThread(p_ctx->interpreter);
+  PyEval_ReleaseThread(plugin_priv_ctx->interpreter);
 
   return retval;
 }
@@ -256,9 +258,9 @@ static bRC handlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
   bRC retval = bRC_Error;
   bool event_dispatched = false;
   PoolMem plugin_options(PM_FNAME);
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_priv_ctx = (plugin_ctx*)ctx->pContext;
 
-  if (!p_ctx) { goto bail_out; }
+  if (!plugin_priv_ctx) { goto bail_out; }
 
   /*
    * First handle some events internally before calling python if it
@@ -280,7 +282,7 @@ static bRC handlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
    * processing was successful (e.g. retval == bRC_OK).
    */
   if (!event_dispatched || retval == bRC_OK) {
-    PyEval_AcquireThread(p_ctx->interpreter);
+    PyEval_AcquireThread(plugin_priv_ctx->interpreter);
 
     /*
      * Now dispatch the event to Python.
@@ -291,7 +293,7 @@ static bRC handlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
         /*
          * See if we already loaded the Python modules.
          */
-        if (!p_ctx->python_loaded) {
+        if (!plugin_priv_ctx->python_loaded) {
           retval = PyLoadModule(ctx, plugin_options.c_str());
         }
 
@@ -308,7 +310,7 @@ static bRC handlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
          * We only try to call Python when we loaded the right module until
          * that time we pretend the call succeeded.
          */
-        if (p_ctx->python_loaded) {
+        if (plugin_priv_ctx->python_loaded) {
           retval = PyHandlePluginEvent(ctx, event, value);
         } else {
           retval = bRC_OK;
@@ -316,7 +318,7 @@ static bRC handlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
         break;
     }
 
-    PyEval_ReleaseThread(p_ctx->interpreter);
+    PyEval_ReleaseThread(plugin_priv_ctx->interpreter);
   }
 
 bail_out:
@@ -392,7 +394,7 @@ static bRC parse_plugin_definition(bpContext* ctx,
   int i, cnt;
   PoolMem plugin_definition(PM_FNAME);
   char *bp, *argument, *argument_value;
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_priv_ctx = (plugin_ctx*)ctx->pContext;
 
   if (!value) { return bRC_Error; }
 
@@ -463,13 +465,13 @@ static bRC parse_plugin_definition(bpContext* ctx,
 
         switch (plugin_arguments[i].type) {
           case argument_instance:
-            int_destination = &p_ctx->instance;
+            int_destination = &plugin_priv_ctx->instance;
             break;
           case argument_module_path:
-            str_destination = &p_ctx->module_path;
+            str_destination = &plugin_priv_ctx->module_path;
             break;
           case argument_module_name:
-            str_destination = &p_ctx->module_name;
+            str_destination = &plugin_priv_ctx->module_name;
             break;
           default:
             break;
@@ -638,59 +640,60 @@ static void PyErrorHandler(bpContext* ctx, int msgtype)
 static bRC PyLoadModule(bpContext* ctx, void* value)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_priv_ctx = (struct plugin_ctx*)ctx->pContext;
   PyObject *sysPath, *mPath, *pName, *pFunc;
 
   /*
    * See if we already setup the python search path.
    */
-  if (!p_ctx->python_path_set) {
+  if (!plugin_priv_ctx->python_path_set) {
     /*
      * Extend the Python search path with the given module_path.
      */
-    if (p_ctx->module_path) {
+    if (plugin_priv_ctx->module_path) {
       sysPath = PySys_GetObject((char*)"path");
-      mPath = PyString_FromString(p_ctx->module_path);
+      mPath = PyString_FromString(plugin_priv_ctx->module_path);
       PyList_Append(sysPath, mPath);
       Py_DECREF(mPath);
-      p_ctx->python_path_set = true;
+      plugin_priv_ctx->python_path_set = true;
     }
   }
 
   /*
    * Try to load the Python module by name.
    */
-  if (p_ctx->module_name) {
+  if (plugin_priv_ctx->module_name) {
     Dmsg(ctx, debuglevel, "python-dir: Trying to load module with name %s\n",
-         p_ctx->module_name);
-    pName = PyString_FromString(p_ctx->module_name);
-    p_ctx->pModule = PyImport_Import(pName);
+         plugin_priv_ctx->module_name);
+    pName = PyString_FromString(plugin_priv_ctx->module_name);
+    plugin_priv_ctx->pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
-    if (!p_ctx->pModule) {
+    if (!plugin_priv_ctx->pModule) {
       Dmsg(ctx, debuglevel, "python-dir: Failed to load module with name %s\n",
-           p_ctx->module_name);
+           plugin_priv_ctx->module_name);
       goto bail_out;
     }
 
     Dmsg(ctx, debuglevel,
          "python-dir: Successfully loaded module with name %s\n",
-         p_ctx->module_name);
+         plugin_priv_ctx->module_name);
 
     /*
      * Get the Python dictionary for lookups in the Python namespace.
      */
-    p_ctx->pDict = PyModule_GetDict(p_ctx->pModule); /* Borrowed reference */
+    plugin_priv_ctx->pyModuleFunctionsDict =
+        PyModule_GetDict(plugin_priv_ctx->pModule); /* Borrowed reference */
 
     /*
      * Encode the bpContext so a Python method can pass it in on calling back.
      */
-    p_ctx->bpContext = PyCreatebpContext(ctx);
+    plugin_priv_ctx->py_bpContext = PyCreatebpContext(ctx);
 
     /*
      * Lookup the load_bareos_plugin() function in the python module.
      */
-    pFunc = PyDict_GetItemString(p_ctx->pDict,
+    pFunc = PyDict_GetItemString(plugin_priv_ctx->pyModuleFunctionsDict,
                                  "load_bareos_plugin"); /* Borrowed reference */
     if (pFunc && PyCallable_Check(pFunc)) {
       PyObject *pPluginDefinition, *pRetVal;
@@ -698,8 +701,8 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
       pPluginDefinition = PyString_FromString((char*)value);
       if (!pPluginDefinition) { goto bail_out; }
 
-      pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
-                                             pPluginDefinition, NULL);
+      pRetVal = PyObject_CallFunctionObjArgs(
+          pFunc, plugin_priv_ctx->py_bpContext, pPluginDefinition, NULL);
       Py_DECREF(pPluginDefinition);
 
       if (!pRetVal) {
@@ -717,7 +720,7 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
     /*
      * Keep track we successfully loaded.
      */
-    p_ctx->python_loaded = true;
+    plugin_priv_ctx->python_loaded = true;
   }
 
   return retval;
@@ -737,21 +740,22 @@ bail_out:
 static bRC PyParsePluginDefinition(bpContext* ctx, void* value)
 {
   bRC retval = bRC_Error;
-  struct plugin_ctx* p_ctx = (struct plugin_ctx*)ctx->pContext;
+  struct plugin_ctx* plugin_priv_ctx = (struct plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the parse_plugin_definition() function in the python module.
    */
-  pFunc = PyDict_GetItemString(
-      p_ctx->pDict, "parse_plugin_definition"); /* Borrowed reference */
+  pFunc =
+      PyDict_GetItemString(plugin_priv_ctx->pyModuleFunctionsDict,
+                           "parse_plugin_definition"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pPluginDefinition, *pRetVal;
 
     pPluginDefinition = PyString_FromString((char*)value);
     if (!pPluginDefinition) { goto bail_out; }
 
-    pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_priv_ctx->py_bpContext,
                                            pPluginDefinition, NULL);
     Py_DECREF(pPluginDefinition);
 
@@ -789,21 +793,21 @@ static bRC PySetPluginValue(bpContext* ctx, pDirVariable var, void* value)
 static bRC PyHandlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
 {
   bRC retval = bRC_Error;
-  plugin_ctx* p_ctx = (plugin_ctx*)ctx->pContext;
+  plugin_ctx* plugin_priv_ctx = (plugin_ctx*)ctx->pContext;
   PyObject* pFunc;
 
   /*
    * Lookup the handle_plugin_event() function in the python module.
    */
-  pFunc = PyDict_GetItemString(p_ctx->pDict,
+  pFunc = PyDict_GetItemString(plugin_priv_ctx->pyModuleFunctionsDict,
                                "handle_plugin_event"); /* Borrowed reference */
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pEventType, *pRetVal;
 
     pEventType = PyInt_FromLong(event->eventType);
 
-    pRetVal =
-        PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pEventType, NULL);
+    pRetVal = PyObject_CallFunctionObjArgs(pFunc, plugin_priv_ctx->py_bpContext,
+                                           pEventType, NULL);
     Py_DECREF(pEventType);
 
     if (!pRetVal) {

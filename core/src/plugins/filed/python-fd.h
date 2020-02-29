@@ -772,7 +772,7 @@ MOD_INIT(bareosfd)
 
   /* Pointer Capsules to avoid context transfer back and forth */
   PyObject* PyFdModulePluginContext =
-      PyCapsule_New((void*)&bareos_plugin_"bareosfd.bpContext", NULL);
+      PyCapsule_New((void*)&bareos_plugin_context, "bareosfd.bpContext", NULL);
 
   if (!PyFdModulePluginContext) {
     printf("python-fd.h: PyCapsule_New failed\n");

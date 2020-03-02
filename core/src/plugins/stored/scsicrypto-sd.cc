@@ -2,7 +2,7 @@
    BAREOS® - Backup Archiving REcovery Open Sourced
 
    Copyright (C) 2012 Planets Communications B.V.
-   Copyright (C) 2013-2016 Bareos GmbH & Co. KG
+   Copyright (C) 2013-2020 Bareos GmbH & Co. KG
 
    This program is Free Software; you can redistribute it and/or
    modify it under the terms of version three of the GNU Affero General Public
@@ -80,8 +80,8 @@ using namespace storagedaemon;
  */
 static bRC newPlugin(bpContext* ctx);
 static bRC freePlugin(bpContext* ctx);
-static bRC getPluginValue(bpContext* ctx, psdVariable var, void* value);
-static bRC setPluginValue(bpContext* ctx, psdVariable var, void* value);
+static bRC getPluginValue(bpContext* ctx, pVariable var, void* value);
+static bRC setPluginValue(bpContext* ctx, pVariable var, void* value);
 static bRC handlePluginEvent(bpContext* ctx, bsdEvent* event, void* value);
 static bRC do_set_scsi_encryption_key(void* value);
 static bRC do_clear_scsi_encryption_key(void* value);
@@ -213,7 +213,7 @@ static bRC freePlugin(bpContext* ctx)
 /**
  * Return some plugin value (none defined)
  */
-static bRC getPluginValue(bpContext* ctx, psdVariable var, void* value)
+static bRC getPluginValue(bpContext* ctx, pVariable var, void* value)
 {
   Dmsg1(debuglevel, "scsicrypto-sd: getPluginValue var=%d\n", var);
 
@@ -223,7 +223,7 @@ static bRC getPluginValue(bpContext* ctx, psdVariable var, void* value)
 /**
  * Set a plugin value (none defined)
  */
-static bRC setPluginValue(bpContext* ctx, psdVariable var, void* value)
+static bRC setPluginValue(bpContext* ctx, pVariable var, void* value)
 {
   Dmsg1(debuglevel, "scsicrypto-sd: setPluginValue var=%d\n", var);
 

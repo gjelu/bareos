@@ -30,7 +30,7 @@ if(HAVE_WIN32)
 endif()
 
 if(HAVE_PYTHON)
-  add_library(python-dir MODULE python-dir.cc)
+  add_library(python-dir MODULE python/python-dir.cc)
   # do not prefix with "lib"
   set_target_properties(python-dir PROPERTIES PREFIX "")
   install(TARGETS python-dir DESTINATION ${plugindir})
@@ -45,7 +45,7 @@ if(HAVE_PYTHON)
 endif()
 
 if(HAVE_PYTHON)
-  configure_file(setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
+  configure_file(python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
   add_custom_target(bareosdir-pymodule ALL
     COMMENT "building python module pythonmodules/bareosdir.so"
     COMMAND ${PYTHON_EXECUTABLE} python/setup.py build

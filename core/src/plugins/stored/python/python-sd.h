@@ -31,7 +31,7 @@
 #define PYTHON_MODULE_NAME_QUOTED "bareossd"
 
 /* common code for all python plugins */
-#include "../python_plugins_common.h"
+#include "plugins/python_plugins_common.h"
 #include "plugins/filed/fd_common.h"
 
 namespace storagedaemon {

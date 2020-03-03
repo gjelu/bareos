@@ -127,7 +127,7 @@ struct plugin_private_context {
 static PyThreadState* mainThreadState;
 
 /* functions common to all plugins */
-#include "../python_plugins_common.inc"
+#include "plugins/python_plugins_common.inc"
 
 #ifdef __cplusplus
 extern "C" {

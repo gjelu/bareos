@@ -2368,17 +2368,18 @@ static PyObject* PyBareosDebugMessage(PyObject* self, PyObject* args)
 
   if (dbgmsg) {
     bareos_plugin_ctx = GetPluginContextFromPythonModule();
-    Dmsg(bareos_plugin_ctx, level, "python-fd: %s", dbgmsg);
+    if (bareos_plugin_ctx && bfuncs) {
+      Dmsg(bareos_plugin_ctx, level, "python-fd: %s", dbgmsg);
+    }
   }
-
   Py_INCREF(Py_None);
   return Py_None;
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue Job messages using the Bareos Job message
- * facility.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue Job messages using the Bareos Job
+ * message facility.
  */
 static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 {
@@ -2401,9 +2402,9 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Register Event to register additional events
- * it wants to receive.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Register Event to register
+ * additional events it wants to receive.
  */
 static PyObject* PyBareosRegisterEvents(PyObject* self, PyObject* args)
 {
@@ -2442,9 +2443,9 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue an Unregister Event to unregister events it
- * doesn't want to receive anymore.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue an Unregister Event to unregister
+ * events it doesn't want to receive anymore.
  */
 static PyObject* PyBareosUnRegisterEvents(PyObject* self, PyObject* args)
 {
@@ -2481,9 +2482,9 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a GetInstanceCount to retrieve the number of
- * instances of the current plugin being loaded into the daemon.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a GetInstanceCount to retrieve the
+ * number of instances of the current plugin being loaded into the daemon.
  */
 static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 {
@@ -2508,8 +2509,8 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add Exclude pattern to the fileset.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add Exclude pattern to the fileset.
  */
 static PyObject* PyBareosAddExclude(PyObject* self, PyObject* args)
 {
@@ -2530,8 +2531,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add Include pattern to the fileset.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add Include pattern to the fileset.
  */
 static PyObject* PyBareosAddInclude(PyObject* self, PyObject* args)
 {
@@ -2552,8 +2553,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add Include Options to the fileset.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add Include Options to the fileset.
  */
 static PyObject* PyBareosAddOptions(PyObject* self, PyObject* args)
 {
@@ -2574,8 +2575,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add Regex to the fileset.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add Regex to the fileset.
  */
 static PyObject* PyBareosAddRegex(PyObject* self, PyObject* args)
 {
@@ -2599,8 +2600,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add Wildcard to the fileset.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add Wildcard to the fileset.
  */
 static PyObject* PyBareosAddWild(PyObject* self, PyObject* args)
 {
@@ -2624,8 +2625,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add New Option block.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add New Option block.
  */
 static PyObject* PyBareosNewOptions(PyObject* self, PyObject* args)
 {
@@ -2643,8 +2644,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add New Include block.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add New Include block.
  */
 static PyObject* PyBareosNewInclude(PyObject* self, PyObject* args)
 {
@@ -2662,8 +2663,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Add New Pre Include block.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Add New Pre Include block.
  */
 static PyObject* PyBareosNewPreInclude(PyObject* self, PyObject* args)
 {
@@ -2681,9 +2682,9 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a check if a file have to be backed up using
- * Accurate code.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a check if a file have to be backed up
+ * using Accurate code.
  */
 static PyObject* PyBareosCheckChanges(PyObject* self, PyObject* args)
 {
@@ -2735,9 +2736,9 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a check if a file would be saved using current
- * Include/Exclude code.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a check if a file would be saved using
+ * current Include/Exclude code.
  */
 static PyObject* PyBareosAcceptFile(PyObject* self, PyObject* args)
 {
@@ -2779,8 +2780,8 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Set bit in the Accurate Seen bitmap.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Set bit in the Accurate Seen bitmap.
  */
 static PyObject* PyBareosSetSeenBitmap(PyObject* self, PyObject* args)
 {
@@ -2803,8 +2804,9 @@ bail_out:
 }
 
 /**
- * Callback function which is exposed as a part of the additional methods which
- * allow a Python plugin to issue a Clear bit in the Accurate Seen bitmap.
+ * Callback function which is exposed as a part of the additional methods
+ * which allow a Python plugin to issue a Clear bit in the Accurate Seen
+ * bitmap.
  */
 static PyObject* PyBareosClearSeenBitmap(PyObject* self, PyObject* args)
 {

@@ -2999,7 +2999,7 @@ static void PyStatPacket_dealloc(PyStatPacket* self) { PyObject_Del(self); }
 static inline const char* print_flags_bitmap(PyObject* bitmap)
 {
   static char visual_bitmap[FO_MAX + 1];
-
+  if (!bitmap) { return "<NULL>"; }
   if (PyByteArray_Check(bitmap)) {
     int cnt;
     char* flags;

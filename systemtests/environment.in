@@ -103,3 +103,6 @@ export BAREOS_WEBUI_PUBLIC_DIR=@BAREOS_WEBUI_PUBLIC_DIR@
 #
 
 export OVIRT_SERVER=@ovirt_server@
+
+
+export PYTHONPATH=@pythonpath@

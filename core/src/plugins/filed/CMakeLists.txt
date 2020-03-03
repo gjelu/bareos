@@ -92,7 +92,7 @@ if(HAVE_PYTHON)
 endif()
 
 if(HAVE_PYTHON)
-  configure_file(python/setup.py.in python/setup.py)
+  configure_file(python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
 
   add_custom_target(bareosfd-pymodule ALL
     COMMENT "building python module pythonmodules/bareosfd.so"

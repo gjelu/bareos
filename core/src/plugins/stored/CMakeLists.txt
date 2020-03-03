@@ -61,9 +61,8 @@ if(HAVE_PYTHON)
   install(FILES ${PYFILES} DESTINATION ${plugindir})
 endif()
 
-
 if(HAVE_PYTHON)
-  configure_file(setup.py.in setup.py)
+  configure_file(setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
   add_custom_target(bareossd-pymodule ALL
     COMMENT "building python module pythonmodules/bareossd.so"
     COMMAND ${PYTHON_EXECUTABLE} setup.py build

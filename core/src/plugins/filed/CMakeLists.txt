@@ -44,7 +44,7 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 # set(DLLIBS dl)
 
-add_library(bpipe-fd MODULE bpipe-fd.cc)
+add_library(bpipe-fd MODULE bpipe/bpipe-fd.cc)
 set_target_properties(bpipe-fd PROPERTIES PREFIX "")
 install(TARGETS bpipe-fd DESTINATION ${plugindir} COMPONENT filedaemon)
 if(HAVE_WIN32 OR HAVE_DARWIN_OS)
@@ -63,41 +63,41 @@ if(HAVE_WIN32)
 endif()
 
 if(${HAVE_CEPHFS})
-  add_library(cephfs-fd MODULE cephfs-fd.cc)
+  add_library(cephfs-fd MODULE cephfs/cephfs-fd.cc)
   set_target_properties(cephfs-fd PROPERTIES PREFIX "")
   install(TARGETS cephfs-fd DESTINATION ${plugindir} COMPONENT filedaemon)
 endif()
 
 if(${HAVE_CEPH_RADOS})
-  add_library(rados-fd MODULE rados-fd.cc)
+  add_library(rados-fd MODULE rados/rados-fd.cc)
   set_target_properties(rados-fd PROPERTIES PREFIX "")
   install(TARGETS rados-fd DESTINATION ${plugindir} COMPONENT filedaemon)
 endif()
 
 if(NOT HAVE_WIN32)
-  add_library(example-plugin-fd MODULE example-plugin-fd.cc)
+  add_library(example-plugin-fd MODULE example/example-plugin-fd.cc)
   set_target_properties(example-plugin-fd PROPERTIES PREFIX "")
 endif()
 
 if(HAVE_PYTHON)
-  add_library(python-fd MODULE python-fd.cc)
+  add_library(python-fd MODULE python/python-fd.cc)
   set_target_properties(python-fd PROPERTIES PREFIX "")
   install(TARGETS python-fd DESTINATION ${plugindir} COMPONENT filedaemon)
   target_link_libraries(python-fd ${PYTHON_LIBRARIES} bareos)
 endif()
 
 if(HAVE_PYTHON)
-  add_executable( bareosfd_module_main bareosfd_module_main.cc)
+  add_executable(bareosfd_module_main python/bareosfd_module_main.cc)
   target_link_libraries(bareosfd_module_main ${PYTHON_LIBRARIES} bareos)
 endif()
 
 if(HAVE_PYTHON)
-  configure_file(setup.py.in setup.py)
+  configure_file(python/setup.py.in python/setup.py)
 
   add_custom_target(bareosfd-pymodule ALL
     COMMENT "building python module pythonmodules/bareosfd.so"
-    COMMAND ${PYTHON_EXECUTABLE} setup.py build
-    COMMAND ${PYTHON_EXECUTABLE} setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
+    COMMAND ${PYTHON_EXECUTABLE} python/setup.py build
+    COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
     DEPENDS python-fd
     )
 

@@ -6,16 +6,16 @@ import time
 class TestBareosFd(unittest.TestCase):
 
     def test_GetValue(self):
-        bareosdir.GetValue()
+        bareosdir.GetValue(1)
 
     def test_SetValue(self):
         bareosdir.SetValue()
 
     def test_DebugMessage(self):
-        bareosdir.DebugMessage()
+        bareosdir.DebugMessage(0, "This is a debug message\n")
 
     def test_JobMessage(self):
-        bareosdir.JobMessage()
+        bareosdir.JobMessage(0, "This is a Job Message")
 
     def test_RegisterEvents(self):
         bareosdir.RegisterEvents()

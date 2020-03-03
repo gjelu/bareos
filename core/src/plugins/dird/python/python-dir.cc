@@ -668,6 +668,7 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
   bpContext* bareos_plugin_ctx = NULL;
   PyObject* pRetVal = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i:BareosGetValue", &var)) { return NULL; }
 
   switch (var) {
@@ -757,6 +758,7 @@ static PyObject* PyBareosSetValue(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject* pyValue;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "iO:BareosSetValue", &var, &pyValue)) {
     goto bail_out;
   }
@@ -806,8 +808,9 @@ static PyObject* PyBareosDebugMessage(PyObject* self, PyObject* args)
 {
   int level;
   char* dbgmsg = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosDebugMessage", &level, &dbgmsg)) {
     return NULL;
   }
@@ -830,8 +833,9 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 {
   int type;
   char* jobmsg = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosJobMessage", &type, &jobmsg)) {
     return NULL;
   }
@@ -853,10 +857,11 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 static PyObject* PyBareosRegisterEvents(PyObject* self, PyObject* args)
 {
   int len, event;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
@@ -894,10 +899,11 @@ bail_out:
 static PyObject* PyBareosUnRegisterEvents(PyObject* self, PyObject* args)
 {
   int len, event;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosUnRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
@@ -938,6 +944,7 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
   bpContext* bareos_plugin_ctx = NULL;
   PyObject* pRetVal = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosGetInstanceCount")) { return NULL; }
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();

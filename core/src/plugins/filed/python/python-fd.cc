@@ -2241,6 +2241,7 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
 
   PyObject* pRetVal = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i:BareosGetValue", &var)) { return NULL; }
 
   switch (var) {
@@ -2315,6 +2316,7 @@ static PyObject* PyBareosSetValue(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject* pyValue;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "iO:BareosSetValue", &var, &pyValue)) {
     goto bail_out;
   }
@@ -2360,18 +2362,15 @@ static PyObject* PyBareosDebugMessage(PyObject* self, PyObject* args)
 {
   int level;
   char* dbgmsg = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = GetPluginContextFromPythonModule();
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
+
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosDebugMessage", &level, &dbgmsg)) {
     return NULL;
   }
-
-  if (dbgmsg) {
-    bareos_plugin_ctx = GetPluginContextFromPythonModule();
-    if (bareos_plugin_ctx && bfuncs) {
-      Dmsg(bareos_plugin_ctx, level, "python-fd: %s", dbgmsg);
-    }
-  }
+  if (dbgmsg) { Dmsg(bareos_plugin_ctx, level, "python-fd: %s", dbgmsg); }
   Py_INCREF(Py_None);
   return Py_None;
 }
@@ -2385,9 +2384,9 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 {
   int type;
   char* jobmsg = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
-
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosJobMessage", &type, &jobmsg)) {
     return NULL;
   }
@@ -2409,10 +2408,11 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
 static PyObject* PyBareosRegisterEvents(PyObject* self, PyObject* args)
 {
   int len, event;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
@@ -2450,10 +2450,11 @@ bail_out:
 static PyObject* PyBareosUnRegisterEvents(PyObject* self, PyObject* args)
 {
   int len, event;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosUnRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
@@ -2493,6 +2494,7 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 
   PyObject* pRetVal = NULL;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosGetInstanceCount")) { return NULL; }
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2515,10 +2517,11 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 static PyObject* PyBareosAddExclude(PyObject* self, PyObject* args)
 {
   char* file = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|z:BareosAddExclude", &file)) { goto bail_out; }
 
   if (file) {
@@ -2537,10 +2540,11 @@ bail_out:
 static PyObject* PyBareosAddInclude(PyObject* self, PyObject* args)
 {
   char* file = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|z:BareosAddInclude", &file)) { goto bail_out; }
 
   if (file) {
@@ -2559,10 +2563,11 @@ bail_out:
 static PyObject* PyBareosAddOptions(PyObject* self, PyObject* args)
 {
   char* opts = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|z:BareosAddOptions", &opts)) { goto bail_out; }
 
   if (opts) {
@@ -2582,10 +2587,11 @@ static PyObject* PyBareosAddRegex(PyObject* self, PyObject* args)
 {
   int type;
   char* item = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|zi:BareosAddRegex", &item, &type)) {
     goto bail_out;
   }
@@ -2607,10 +2613,11 @@ static PyObject* PyBareosAddWild(PyObject* self, PyObject* args)
 {
   int type;
   char* item = NULL;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|zi:BareosAddWild", &item, &type)) {
     goto bail_out;
   }
@@ -2630,10 +2637,11 @@ bail_out:
  */
 static PyObject* PyBareosNewOptions(PyObject* self, PyObject* args)
 {
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewOptions")) { goto bail_out; }
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2649,10 +2657,11 @@ bail_out:
  */
 static PyObject* PyBareosNewInclude(PyObject* self, PyObject* args)
 {
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewInclude")) { goto bail_out; }
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2668,10 +2677,11 @@ bail_out:
  */
 static PyObject* PyBareosNewPreInclude(PyObject* self, PyObject* args)
 {
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   bRC retval = bRC_Error;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewPreInclude")) { goto bail_out; }
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2688,12 +2698,13 @@ bail_out:
  */
 static PyObject* PyBareosCheckChanges(PyObject* self, PyObject* args)
 {
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
 
   struct save_pkt sp;
   bRC retval = bRC_Error;
   PySavePacket* pSavePkt;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosCheckChanges", &pSavePkt)) {
     goto bail_out;
   }
@@ -2742,11 +2753,12 @@ bail_out:
  */
 static PyObject* PyBareosAcceptFile(PyObject* self, PyObject* args)
 {
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   struct save_pkt sp;
   bRC retval = bRC_Error;
   PySavePacket* pSavePkt;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosAcceptFile", &pSavePkt)) {
     goto bail_out;
   }
@@ -2786,11 +2798,12 @@ bail_out:
 static PyObject* PyBareosSetSeenBitmap(PyObject* self, PyObject* args)
 {
   bool all;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   char* fname = NULL;
   bRC retval = bRC_Error;
   PyObject* pyBool;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O|s:BareosSetSeenBitmap", &pyBool, &fname)) {
     goto bail_out;
   }
@@ -2811,11 +2824,12 @@ bail_out:
 static PyObject* PyBareosClearSeenBitmap(PyObject* self, PyObject* args)
 {
   bool all;
-  bpContext* bareos_plugin_ctx;
+  bpContext* bareos_plugin_ctx = NULL;
   char* fname = NULL;
   bRC retval = bRC_Error;
   PyObject* pyBool;
 
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O|s:BareosClearSeenBitmap", &pyBool, &fname)) {
     goto bail_out;
   }

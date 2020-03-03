@@ -1,6 +1,6 @@
 #   BAREOS® - Backup Archiving REcovery Open Sourced
 #
-#   Copyright (C) 2017-2019 Bareos GmbH & Co. KG
+#   Copyright (C) 2017-2020 Bareos GmbH & Co. KG
 #
 #   This program is Free Software; you can redistribute it and/or
 #   modify it under the terms of version three of the GNU Affero General Public
@@ -42,4 +42,20 @@ if(HAVE_PYTHON)
   )
 
   install(FILES ${PYFILES} DESTINATION ${plugindir})
+endif()
+
+
+if(HAVE_PYTHON)
+  configure_file(setup.py.in setup.py)
+  add_custom_target(bareosdir ALL
+    COMMENT "building python module pythonmodules/bareosdir.so"
+    COMMAND ${PYTHON_EXECUTABLE} setup.py build
+    COMMAND ${PYTHON_EXECUTABLE} setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
+    DEPENDS python-dir
+    )
+
+  add_test(NAME bareosdir-python-module
+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/bareosdir_test.py
+    )
+  set_property(TEST bareosdir-python-module PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/test" LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/../../lib)
 endif()

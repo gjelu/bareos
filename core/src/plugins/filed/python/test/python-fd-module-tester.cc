@@ -1,3 +1,26 @@
+/*
+   BAREOS® - Backup Archiving REcovery Open Sourced
+
+   Copyright (C) 2020-2020 Bareos GmbH & Co. KG
+
+   This program is Free Software; you can redistribute it and/or
+   modify it under the terms of version three of the GNU Affero General Public
+   License as published by the Free Software Foundation, which is
+   listed in the file LICENSE.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+   Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+   02110-1301, USA.
+*/
+
+/* Load the python-fd plugin and test it */
+
 #include "Python.h"
 class PoolMem;
 #define NbytesForBits(n) ((((n)-1) >> 3) + 1)
@@ -46,33 +69,141 @@ static void PyErrorHandler()
 }
 
 using namespace filedaemon;
+bRC bareosRegisterEvents(bpContext* ctx, int nr_events, ...) { return bRC_OK; };
+bRC bareosUnRegisterEvents(bpContext* ctx, int nr_events, ...)
+{
+  return bRC_OK;
+};
+bRC bareosGetInstanceCount(bpContext* ctx, int* ret) { return bRC_OK; };
+bRC bareosGetValue(bpContext* ctx, bVariable var, void* value)
+{
+  return bRC_OK;
+};
+bRC bareosSetValue(bpContext* ctx, bVariable var, void* value)
+{
+  return bRC_OK;
+};
+bRC bareosJobMsg(bpContext* ctx,
+                 const char* file,
+                 int line,
+                 int type,
+                 utime_t mtime,
+                 const char* fmt,
+                 ...)
+{
+  return bRC_OK;
+};
+bRC bareosDebugMsg(bpContext* ctx,
+                   const char* file,
+                   int line,
+                   int level,
+                   const char* fmt,
+                   ...)
+{
+  return bRC_OK;
+};
+void* bareosMalloc(bpContext* ctx, const char* file, int line, size_t size)
+{
+  return NULL;
+};
+void bareosFree(bpContext* ctx, const char* file, int line, void* mem)
+{
+  return;
+};
+bRC bareosAddExclude(bpContext* ctx, const char* file) { return bRC_OK; };
+bRC bareosAddInclude(bpContext* ctx, const char* file) { return bRC_OK; };
+bRC bareosAddOptions(bpContext* ctx, const char* opts) { return bRC_OK; };
+bRC bareosAddRegex(bpContext* ctx, const char* item, int type)
+{
+  return bRC_OK;
+};
+bRC bareosAddWild(bpContext* ctx, const char* item, int type)
+{
+  return bRC_OK;
+};
+bRC bareosNewOptions(bpContext* ctx) { return bRC_OK; };
+bRC bareosNewInclude(bpContext* ctx) { return bRC_OK; };
+bRC bareosNewPreInclude(bpContext* ctx) { return bRC_OK; };
+bRC bareosCheckChanges(bpContext* ctx, struct save_pkt* sp) { return bRC_OK; };
+bRC bareosAcceptFile(bpContext* ctx, struct save_pkt* sp)
+{
+  return bRC_OK;
+}; /* Need fname and statp */
+bRC bareosSetSeenBitmap(bpContext* ctx, bool all, char* fname)
+{
+  return bRC_OK;
+};
+bRC bareosClearSeenBitmap(bpContext* ctx, bool all, char* fname)
+{
+  return bRC_OK;
+};
+
+
+/* Bareos entry points */
+static bFuncs bfuncs = {sizeof(bFuncs),
+                        FD_PLUGIN_INTERFACE_VERSION,
+                        bareosRegisterEvents,
+                        bareosUnRegisterEvents,
+                        bareosGetInstanceCount,
+                        bareosGetValue,
+                        bareosSetValue,
+                        bareosJobMsg,
+                        bareosDebugMsg,
+                        bareosMalloc,
+                        bareosFree,
+                        bareosAddExclude,
+                        bareosAddInclude,
+                        bareosAddOptions,
+                        bareosAddRegex,
+                        bareosAddWild,
+                        bareosNewOptions,
+                        bareosNewInclude,
+                        bareosNewPreInclude,
+                        bareosCheckChanges,
+                        bareosAcceptFile,
+                        bareosSetSeenBitmap,
+                        bareosClearSeenBitmap};
+
+static void* bareos_plugin_context = NULL;
 
 int main(int argc, char* argv[])
 {
-  static filedaemon::bFuncs bfuncs;
   Py_SetProgramName(argv[0]);
   Py_Initialize();
 
   PyObject* bareosfdModule = PyImport_ImportModule("bareosfd");
   if (bareosfdModule) {
-    printf("loading bareosfd successfully\n");
+    printf("loaded bareosfd successfully\n");
   } else {
-    printf("loaded bareosfd failed\n");
+    printf("loading of  bareosfd failed\n");
   }
   if (PyErr_Occurred()) { PyErrorHandler(); }
 
-  // Extract capsule pointer from bareosfd module
+  // Extract capsules pointer from bareosfd module
   void* ctx_from_bareosfd_module = PyCapsule_Import("bareosfd.bpContext", 0);
-
   if (ctx_from_bareosfd_module) {
     printf("module_main: imported capsule successfully\n");
     printf("module_main: ctx_from_bareosfd_module is at %p\n",
            ctx_from_bareosfd_module);
-
     printf("bfuncs are at: %p\n", &bfuncs);
-    ctx_from_bareosfd_module = &bfuncs;
     printf("ctx_from_bareosfd_module contains %p\n", ctx_from_bareosfd_module);
+  } else {
+    printf("importing bareosfd.bpContext failed \n");
   }
+
+  // Extract capsules pointer from bareosfd module
+  void* bfuncs_from_bareosfd_module = PyCapsule_Import("bareosfd.bFuncs", 0);
+  if (bfuncs_from_bareosfd_module) {
+    printf("module_main: imported capsule successfully\n");
+    printf("module_main: bfuncs_from_bareosfd_module is at %p\n",
+           bfuncs_from_bareosfd_module);
+    printf("bfuncs are at: %p\n", &bfuncs);
+    printf("bfuncs_from_bareosfd_module contains %p\n",
+           bfuncs_from_bareosfd_module);
+  } else {
+    printf("importing bareosfd.bFuncs failed \n");
+  }
+
 
   PyObject* pModule = PyImport_ImportModule("bareosfd-module-test");
 

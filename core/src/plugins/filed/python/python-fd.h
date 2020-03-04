@@ -752,34 +752,43 @@ static PyMethodDef Methods[] = {
 } /* namespace filedaemon */
 using namespace filedaemon;
 
+/* variables storing bareos pointers */
 static void* bareos_plugin_context = NULL;
+static void* bfuncs = NULL;
 
 MOD_INIT(bareosfd)
 {
-  /* bareos_plugin_context holds the bpContext instead of passing to Python and
-   * extracting it back like it was before. bareos_plugin_context needs to be
-   * set after loading the PYTHON_MODULE_NAME binary python module and will be
-   * used for all calls.
-   */
-
   PyObject* m = NULL;
+  MOD_DEF(m, PYTHON_MODULE_NAME_QUOTED, NULL, Methods)
 
   /* Pointer Capsules to avoid context transfer back and forth */
   PyObject* PyModulePluginContext =
       PyCapsule_New((void*)&bareos_plugin_context,
                     PYTHON_MODULE_NAME_QUOTED ".bpContext", NULL);
-
   if (!PyModulePluginContext) {
-    printf(PYTHON_MODULE_NAME_QUOTED ": PyCapsule_New failed\n");
+    printf(PYTHON_MODULE_NAME_QUOTED ":bpContext PyCapsule_New failed\n");
+    return MOD_ERROR_VAL;
+  }
+  if (PyModulePluginContext) {
+    PyModule_AddObject(m, "bpContext", PyModulePluginContext);
+    printf(PYTHON_MODULE_NAME_QUOTED ": added bpContext\n");
+  } else {
+    printf(PYTHON_MODULE_NAME_QUOTED ":bpContext PyModule_AddObject failed\n");
     return MOD_ERROR_VAL;
   }
 
-  MOD_DEF(m, PYTHON_MODULE_NAME_QUOTED, NULL, Methods)
-
-  if (PyModulePluginContext) {
-    PyModule_AddObject(m, "bpContext", PyModulePluginContext);
+  /* Pointer Capsules to avoid context transfer back and forth */
+  PyObject* PyModulePluginFuncs = PyCapsule_New(
+      (void*)&bareos_plugin_context, PYTHON_MODULE_NAME_QUOTED ".bFuncs", NULL);
+  if (!PyModulePluginFuncs) {
+    printf(PYTHON_MODULE_NAME_QUOTED ":bFuncs PyCapsule_New failed\n");
+    return MOD_ERROR_VAL;
+  }
+  if (PyModulePluginFuncs) {
+    PyModule_AddObject(m, "bFuncs", PyModulePluginFuncs);
+    printf(PYTHON_MODULE_NAME_QUOTED ": added bFuncs\n");
   } else {
-    printf(PYTHON_MODULE_NAME_QUOTED ":PyModule_AddObject failed\n");
+    printf(PYTHON_MODULE_NAME_QUOTED ":bFuncs PyModule_AddObject failed\n");
     return MOD_ERROR_VAL;
   }
 

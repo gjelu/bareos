@@ -2241,8 +2241,8 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
 
   PyObject* pRetVal = NULL;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i:BareosGetValue", &var)) { return NULL; }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   switch (var) {
     case bVarFDName:
@@ -2316,10 +2316,10 @@ static PyObject* PyBareosSetValue(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject* pyValue;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "iO:BareosSetValue", &var, &pyValue)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   switch (var) {
     case bVarLevel: {
@@ -2364,12 +2364,11 @@ static PyObject* PyBareosDebugMessage(PyObject* self, PyObject* args)
   char* dbgmsg = NULL;
   bpContext* bareos_plugin_ctx = GetPluginContextFromPythonModule();
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
-
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosDebugMessage", &level, &dbgmsg)) {
     return NULL;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
+
   if (dbgmsg) { Dmsg(bareos_plugin_ctx, level, "python-fd: %s", dbgmsg); }
   Py_INCREF(Py_None);
   return Py_None;
@@ -2386,10 +2385,10 @@ static PyObject* PyBareosJobMessage(PyObject* self, PyObject* args)
   char* jobmsg = NULL;
   bpContext* bareos_plugin_ctx = NULL;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "i|z:BareosJobMessage", &type, &jobmsg)) {
     return NULL;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   if (jobmsg) {
     bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2412,10 +2411,10 @@ static PyObject* PyBareosRegisterEvents(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   pySeq = PySequence_Fast(pyEvents, "Expected a sequence of events");
   if (!pySeq) { goto bail_out; }
@@ -2454,10 +2453,10 @@ static PyObject* PyBareosUnRegisterEvents(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject *pyEvents, *pySeq, *pyEvent;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosUnRegisterEvents", &pyEvents)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   pySeq = PySequence_Fast(pyEvents, "Expected a sequence of events");
   if (!pySeq) { goto bail_out; }
@@ -2494,8 +2493,8 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 
   PyObject* pRetVal = NULL;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosGetInstanceCount")) { return NULL; }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   if (bfuncs->getInstanceCount(bareos_plugin_ctx, &value) == bRC_OK) {
@@ -2617,10 +2616,10 @@ static PyObject* PyBareosAddWild(PyObject* self, PyObject* args)
 
   bRC retval = bRC_Error;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "|zi:BareosAddWild", &item, &type)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   if (item) {
     bareos_plugin_ctx = GetPluginContextFromPythonModule();
@@ -2641,8 +2640,8 @@ static PyObject* PyBareosNewOptions(PyObject* self, PyObject* args)
 
   bRC retval = bRC_Error;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewOptions")) { goto bail_out; }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   retval = bfuncs->NewOptions(bareos_plugin_ctx);
@@ -2661,8 +2660,8 @@ static PyObject* PyBareosNewInclude(PyObject* self, PyObject* args)
 
   bRC retval = bRC_Error;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewInclude")) { goto bail_out; }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   retval = bfuncs->NewInclude(bareos_plugin_ctx);
@@ -2681,8 +2680,8 @@ static PyObject* PyBareosNewPreInclude(PyObject* self, PyObject* args)
 
   bRC retval = bRC_Error;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, ":BareosNewPreInclude")) { goto bail_out; }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   retval = bfuncs->NewPreInclude(bareos_plugin_ctx);
@@ -2704,10 +2703,10 @@ static PyObject* PyBareosCheckChanges(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PySavePacket* pSavePkt;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosCheckChanges", &pSavePkt)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
 
@@ -2758,10 +2757,10 @@ static PyObject* PyBareosAcceptFile(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PySavePacket* pSavePkt;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O:BareosAcceptFile", &pSavePkt)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
 
@@ -2803,10 +2802,10 @@ static PyObject* PyBareosSetSeenBitmap(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject* pyBool;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O|s:BareosSetSeenBitmap", &pyBool, &fname)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   all = PyObject_IsTrue(pyBool);
@@ -2829,10 +2828,10 @@ static PyObject* PyBareosClearSeenBitmap(PyObject* self, PyObject* args)
   bRC retval = bRC_Error;
   PyObject* pyBool;
 
-  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
   if (!PyArg_ParseTuple(args, "O|s:BareosClearSeenBitmap", &pyBool, &fname)) {
     goto bail_out;
   }
+  PY_CHECK_BAREOS_PLUGIN_CTX_AND_BFUNCS()
 
   bareos_plugin_ctx = GetPluginContextFromPythonModule();
   all = PyObject_IsTrue(pyBool);

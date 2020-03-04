@@ -105,6 +105,7 @@ if(HAVE_PYTHON)
     COMMENT "building python module pythonmodules/bareosfd.so"
     COMMAND ${PYTHON_EXECUTABLE} python/setup.py build
     COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
+    COMMAND rm -R  ${CMAKE_CURRENT_BINARY_DIR}/build
     DEPENDS python-fd
     )
 

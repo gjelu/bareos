@@ -756,12 +756,25 @@ using namespace filedaemon;
 static void* bareos_plugin_context = NULL;
 static void* bfuncs = NULL;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* Forward declaration of loadPlugin()  as it is stored in Capsule */
+bRC loadPlugin(bInfo* lbinfo,
+               bFuncs* lbfuncs,
+               genpInfo** pinfo,
+               pFuncs** pfuncs);
+#ifdef __cplusplus
+}
+#endif
+
 MOD_INIT(bareosfd)
 {
   PyObject* m = NULL;
   MOD_DEF(m, PYTHON_MODULE_NAME_QUOTED, NULL, Methods)
 
-  /* Pointer Capsules to avoid context transfer back and forth */
+
+  /* add bpContext Capsule */
   PyObject* PyModulePluginContext =
       PyCapsule_New((void*)&bareos_plugin_context,
                     PYTHON_MODULE_NAME_QUOTED ".bpContext", NULL);
@@ -771,24 +784,40 @@ MOD_INIT(bareosfd)
   }
   if (PyModulePluginContext) {
     PyModule_AddObject(m, "bpContext", PyModulePluginContext);
-    printf(PYTHON_MODULE_NAME_QUOTED ": added bpContext\n");
+    printf(PYTHON_MODULE_NAME_QUOTED ": added bpContext@%p\n",
+           &bareos_plugin_context);
   } else {
     printf(PYTHON_MODULE_NAME_QUOTED ":bpContext PyModule_AddObject failed\n");
     return MOD_ERROR_VAL;
   }
 
-  /* Pointer Capsules to avoid context transfer back and forth */
-  PyObject* PyModulePluginFuncs = PyCapsule_New(
-      (void*)&bareos_plugin_context, PYTHON_MODULE_NAME_QUOTED ".bFuncs", NULL);
+  /* add bpFuncs Capsule */
+  PyObject* PyModulePluginFuncs =
+      PyCapsule_New((void*)&bfuncs, PYTHON_MODULE_NAME_QUOTED ".bFuncs", NULL);
   if (!PyModulePluginFuncs) {
     printf(PYTHON_MODULE_NAME_QUOTED ":bFuncs PyCapsule_New failed\n");
     return MOD_ERROR_VAL;
   }
   if (PyModulePluginFuncs) {
     PyModule_AddObject(m, "bFuncs", PyModulePluginFuncs);
-    printf(PYTHON_MODULE_NAME_QUOTED ": added bFuncs\n");
+    printf(PYTHON_MODULE_NAME_QUOTED ": added    bFuncs@%p\n", &bfuncs);
   } else {
     printf(PYTHON_MODULE_NAME_QUOTED ":bFuncs PyModule_AddObject failed\n");
+    return MOD_ERROR_VAL;
+  }
+
+  /* add loadPlugin Capsule */
+  PyObject* PyModuleLoadPlugin = PyCapsule_New(
+      (void*)&loadPlugin, PYTHON_MODULE_NAME_QUOTED ".loadPlugin", NULL);
+  if (!PyModuleLoadPlugin) {
+    printf(PYTHON_MODULE_NAME_QUOTED "loadPlugin PyCapsule_New failed\n");
+    return MOD_ERROR_VAL;
+  }
+  if (PyModuleLoadPlugin) {
+    PyModule_AddObject(m, "loadPlugin", PyModuleLoadPlugin);
+    printf(PYTHON_MODULE_NAME_QUOTED ": added   loadPlugin@%p\n", &loadPlugin);
+  } else {
+    printf(PYTHON_MODULE_NAME_QUOTED "loadPlugin PyModule_AddObject failed\n");
     return MOD_ERROR_VAL;
   }
 

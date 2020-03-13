@@ -4,6 +4,14 @@ import time
 print dir(bareosfd)
 print "bareosfd.bJobMessageType:", str( bareosfd.bJobMessageType)
 print "bareosfd.bVariable:", str( bareosfd.bVariable)
+print "bareosfd.bEventType:", str( bareosfd.bEventType)
+print "bareosfd.bFileType:", str( bareosfd.bFileType)
+print "bareosfd.bFuncs:", str( bareosfd.bFuncs)
+print "bareosfd.bIOPS:", str( bareosfd.bIOPS)
+print "bareosfd.bLevels:", str( bareosfd.bLevels)
+print "bareosfd.bbRCs:", str( bareosfd.bbRCs)
+print "bareosfd.bVariable:", str( bareosfd.bVariable)
+print "bareosfd.bcfs:", str( bareosfd.bcfs)
 
 class TestBareosFd(unittest.TestCase):
 

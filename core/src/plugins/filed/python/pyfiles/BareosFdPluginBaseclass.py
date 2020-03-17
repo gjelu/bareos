@@ -25,8 +25,10 @@
 # Functions taken and adapted from bareos-fd.py
 
 import bareosfd
-from bareos_fd_consts import bVariable, bFileType, bRCs, bCFs
-from bareos_fd_consts import bEventType, bIOPS, bJobMessageType
+from bareosfd import *
+#from bareosfd import bVariable, bFileType, bRCs, bCFs
+#from bareosfd import bEventType, bIOPS, bJobMessageType
+
 import os
 
 
@@ -41,21 +43,21 @@ class BareosFdPluginBaseclass(object):
             % (__name__, plugindef),
         )
         events = []
-        events.append(bEventType["bEventJobEnd"])
-        events.append(bEventType["bEventEndBackupJob"])
-        events.append(bEventType["bEventEndFileSet"])
-        events.append(bEventType["bEventHandleBackupFile"])
-        events.append(bEventType["bEventStartBackupJob"])
-        events.append(bEventType["bEventStartRestoreJob"])
+        events.append(bEventJobEnd)
+        events.append(bEventEndBackupJob)
+        events.append(bEventEndFileSet)
+        events.append(bEventHandleBackupFile)
+        events.append(bEventStartBackupJob)
+        events.append(bEventStartRestoreJob)
         bareosfd.RegisterEvents(events)
         # get some static Bareos values
-        self.fdname = bareosfd.GetValue(bVariable["bVarFDName"])
-        self.jobId = bareosfd.GetValue(bVariable["bVarJobId"])
-        self.client = bareosfd.GetValue(bVariable["bVarClient"])
-        self.since = bareosfd.GetValue(bVariable["bVarSinceTime"])
-        self.level = bareosfd.GetValue(bVariable["bVarLevel"])
-        self.jobName = bareosfd.GetValue(bVariable["bVarJobName"])
-        self.workingdir = bareosfd.GetValue(bVariable["bVarWorkingDir"])
+        self.fdname = bareosfd.GetValue(bVarFDName)
+        self.jobId = bareosfd.GetValue(bVarJobId)
+        self.client = bareosfd.GetValue(bVarClient)
+        self.since = bareosfd.GetValue(bVarSinceTime)
+        self.level = bareosfd.GetValue(bVarLevel)
+        self.jobName = bareosfd.GetValue(bVarJobName)
+        self.workingdir = bareosfd.GetValue(bVarWorkingDir)
         self.FNAME = "undef"
         self.file = None
         bareosfd.DebugMessage(
@@ -114,7 +116,7 @@ class BareosFdPluginBaseclass(object):
         """
 
         if mandatory_options is None:
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
         for option in mandatory_options:
             if option not in self.options:
@@ -122,16 +124,16 @@ class BareosFdPluginBaseclass(object):
                     100, "Mandatory option '%s' not defined.\n" % option
                 )
                 bareosfd.JobMessage(
-                    bJobMessageType["M_FATAL"],
+                    M_FATAL,
                     "Mandatory option '%s' not defined.\n" % (option),
                 )
-                return bRCs["bRC_Error"]
+                return bRC_Error
 
             bareosfd.DebugMessage(
                 100, "Using Option %s=%s\n" % (option, self.options[option])
             )
 
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def plugin_io(self, IOP):
         bareosfd.DebugMessage(
@@ -139,7 +141,7 @@ class BareosFdPluginBaseclass(object):
         )
         bareosfd.DebugMessage(100, "FNAME is set to %s\n" % (self.FNAME))
 
-        if IOP.func == bIOPS["IO_OPEN"]:
+        if IOP.func == IO_OPEN:
             self.FNAME = IOP.fname
             try:
                 if IOP.flags & (os.O_CREAT | os.O_WRONLY):
@@ -165,60 +167,60 @@ class BareosFdPluginBaseclass(object):
                     self.file = open(self.FNAME, "rb")
             except:
                 IOP.status = -1
-                return bRCs["bRC_Error"]
+                return bRC_Error
 
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
-        elif IOP.func == bIOPS["IO_CLOSE"]:
+        elif IOP.func == IO_CLOSE:
             bareosfd.DebugMessage(100, "Closing file " + "\n")
             self.file.close()
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
-        elif IOP.func == bIOPS["IO_SEEK"]:
-            return bRCs["bRC_OK"]
+        elif IOP.func == IO_SEEK:
+            return bRC_OK
 
-        elif IOP.func == bIOPS["IO_READ"]:
+        elif IOP.func == IO_READ:
             bareosfd.DebugMessage(
                 200, "Reading %d from file %s\n" % (IOP.count, self.FNAME)
             )
             IOP.buf = bytearray(IOP.count)
             IOP.status = self.file.readinto(IOP.buf)
             IOP.io_errno = 0
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
-        elif IOP.func == bIOPS["IO_WRITE"]:
+        elif IOP.func == IO_WRITE:
             bareosfd.DebugMessage(
                 200, "Writing buffer to file %s\n" % (self.FNAME)
             )
             self.file.write(IOP.buf)
             IOP.status = IOP.count
             IOP.io_errno = 0
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
     def handle_plugin_event(self, event):
-        if event == bEventType["bEventJobEnd"]:
+        if event == bEventJobEnd:
             bareosfd.DebugMessage(
                 100, "handle_plugin_event called with bEventJobEnd\n"
             )
 
-        elif event == bEventType["bEventEndBackupJob"]:
+        elif event == bEventEndBackupJob:
             bareosfd.DebugMessage(
                 100, "handle_plugin_event called with bEventEndBackupJob\n"
             )
 
-        elif event == bEventType["bEventEndFileSet"]:
+        elif event == bEventEndFileSet:
             bareosfd.DebugMessage(
                 100, "handle_plugin_event called with bEventEndFileSet\n"
             )
 
-        elif event == bEventType["bEventStartBackupJob"]:
+        elif event == bEventStartBackupJob:
             bareosfd.DebugMessage(
                 100, "handle_plugin_event() called with bEventStartBackupJob\n"
             )
 
             return self.start_backup_job()
 
-        elif event == bEventType["bEventStartRestoreJob"]:
+        elif event == bEventStartRestoreJob:
             bareosfd.DebugMessage(
                 100,
                 "handle_plugin_event() called with bEventStartRestoreJob\n",
@@ -231,14 +233,14 @@ class BareosFdPluginBaseclass(object):
                 100, "handle_plugin_event called with event %s\n" % (event)
             )
 
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def start_backup_job(self):
         """
         Start of Backup Job. Called just before backup job really start.
         Overload this to arrange whatever you have to do at this time.
         """
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def start_backup_file(self, savepkt):
         """
@@ -246,39 +248,39 @@ class BareosFdPluginBaseclass(object):
         implementation to add files to backup fileset
         """
         bareosfd.DebugMessage(100, "start_backup called\n")
-        return bRCs["bRC_Skip"]
+        return bRC_Skip
 
     def end_backup_file(self):
         bareosfd.DebugMessage(
             100, "end_backup_file() entry point in Python called\n"
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def start_restore_job(self):
         """
         Start of Restore Job. Called , if you have Restore objects.
         Overload this to handle restore objects, if applicable
         """
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def start_restore_file(self, cmd):
         bareosfd.DebugMessage(
             100,
             "start_restore_file() entry point in Python called with %s\n" % (cmd),
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def end_restore_file(self):
         bareosfd.DebugMessage(
             100, "end_restore_file() entry point in Python called\n"
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def restore_object_data(self, ROP):
         bareosfd.DebugMessage(
             100, "restore_object_data called with " + str(ROP) + "\n"
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def create_file(self, restorepkt):
         """
@@ -302,10 +304,10 @@ class BareosFdPluginBaseclass(object):
         # But: only do this for regular files, prevent from
         # IOError: (21, 'Is a directory', '/tmp/bareos-restores/my/dir/')
         # if it's a directory
-        if restorepkt.type == bFileType["FT_REG"]:
+        if restorepkt.type == FT_REG:
             open(FNAME, "wb").close()
-            restorepkt.create_status = bCFs["CF_EXTRACT"]
-        return bRCs["bRC_OK"]
+            restorepkt.create_status = CF_EXTRACT
+        return bRC_OK
 
     def set_file_attributes(self, restorepkt):
         bareosfd.DebugMessage(
@@ -313,45 +315,45 @@ class BareosFdPluginBaseclass(object):
             "set_file_attributes() entry point in Python called with %s\n"
             % (str(restorepkt)),
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def check_file(self, fname):
         bareosfd.DebugMessage(
             100,
             "check_file() entry point in Python called with %s\n" % (fname),
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def get_acl(self, acl):
         bareosfd.DebugMessage(
             100, "get_acl() entry point in Python called with %s\n" % (acl)
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def set_acl(self, acl):
         bareosfd.DebugMessage(
             100, "set_acl() entry point in Python called with %s\n" % (acl)
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def get_xattr(self, xattr):
         bareosfd.DebugMessage(
             100, "get_xattr() entry point in Python called with %s\n" % (xattr)
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def set_xattr(self, xattr):
         bareosfd.DebugMessage(
             100, "set_xattr() entry point in Python called with %s\n" % (xattr)
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def handle_backup_file(self, savepkt):
         bareosfd.DebugMessage(
             100,
             "handle_backup_file() entry point in Python called with %s\n" % (savepkt),
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
 
 # vim: ts=4 tabstop=4 expandtab shiftwidth=4 softtabstop=4

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # BAREOS - Backup Archiving REcovery Open Sourced
 #
-# Copyright (C) 2014-2019 Bareos GmbH & Co. KG
+# Copyright (C) 2014-2020 Bareos GmbH & Co. KG
 #
 # This program is Free Software; you can redistribute it and/or
 # modify it under the terms of version three of the GNU Affero General Public
@@ -25,7 +25,9 @@
 # the backup fileset
 
 import bareosfd
-from bareos_fd_consts import bJobMessageType, bFileType, bRCs
+from bareosfd import *
+#from bareos_fd_consts import bJobMessageType, bFileType, bRCs
+
 import os
 import re
 import hashlib
@@ -83,7 +85,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
                 100, "File %s denied by configuration\n" % (filename)
             )
             bareosfd.JobMessage(
-                bJobMessageType["M_ERROR"],
+                M_ERROR,
                 "File %s denied by configuration\n" % (filename),
             )
             return False
@@ -109,12 +111,12 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
                     100,
                     "Could not open file %s\n" % (self.options["filename"]),
                 )
-                return bRCs["bRC_Error"]
+                return bRC_Error
         else:
             bareosfd.DebugMessage(
                 100, "File %s does not exist\n" % (self.options["filename"])
             )
-            return bRCs["bRC_Error"]
+            return bRC_Error
         # Check, if we have allow or deny regular expressions defined
         if "allow" in self.options:
             self.allow = re.compile(self.options["allow"])
@@ -154,12 +156,12 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
 
         if not self.files_to_backup:
             bareosfd.JobMessage(
-                bJobMessageType["M_ERROR"],
+                M_ERROR,
                 "No (allowed) files to backup found\n",
             )
-            return bRCs["bRC_Error"]
+            return bRC_Error
         else:
-            return bRCs["bRC_Cancel"]
+            return bRC_Cancel
 
     def start_backup_file(self, savepkt):
         """
@@ -169,7 +171,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
         bareosfd.DebugMessage(100, "start_backup_file() called\n")
         if not self.files_to_backup:
             bareosfd.DebugMessage(100, "No files to backup\n")
-            return bRCs["bRC_Skip"]
+            return bRC_Skip
 
         file_to_backup = self.files_to_backup.pop()
         bareosfd.DebugMessage(100, "file: " + file_to_backup + "\n")
@@ -188,7 +190,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
             self.object_index_seq += 1
 
         elif file_to_backup.endswith(".abspath"):
-            savepkt.type = bFileType["FT_RESTORE_FIRST"]
+            savepkt.type = FT_RESTORE_FIRST
             savepkt.fname = file_to_backup
             savepkt.object_name = file_to_backup
             savepkt.object = bytearray(os.path.splitext(file_to_backup)[0])
@@ -198,7 +200,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
 
         elif file_to_backup.endswith(".longrestoreobject"):
             teststring_length = int(os.path.splitext(file_to_backup)[0])
-            savepkt.type = bFileType["FT_RESTORE_FIRST"]
+            savepkt.type = FT_RESTORE_FIRST
             savepkt.fname = file_to_backup
             savepkt.object_name = file_to_backup
             savepkt.object = bytearray("a" * teststring_length)
@@ -208,13 +210,13 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
 
         else:
             savepkt.fname = file_to_backup
-            savepkt.type = bFileType["FT_REG"]
+            savepkt.type = FT_REG
 
         bareosfd.JobMessage(
-            bJobMessageType["M_INFO"],
+            M_INFO,
             "Starting backup of %s\n" % (file_to_backup),
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def end_backup_file(self):
         """
@@ -225,9 +227,9 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
             100, "end_backup_file() entry point in Python called\n"
         )
         if self.files_to_backup:
-            return bRCs["bRC_More"]
+            return bRC_More
         else:
-            return bRCs["bRC_OK"]
+            return bRC_OK
 
     def set_file_attributes(self, restorepkt):
         bareosfd.DebugMessage(
@@ -247,18 +249,18 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
         )
         if file_sha256sum != restoreobject_sha256sum:
             bareosfd.JobMessage(
-                bJobMessageType["M_ERROR"],
+                M_ERROR,
                 "bad restoreobject orig_fname: %s restoreobject_sha256sum: %s file_sha256sum: %s\n"
                 % (orig_fname, repr(restoreobject_sha256sum), repr(file_sha256sum)),
             )
 
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def end_restore_file(self):
         bareosfd.DebugMessage(
             100, "end_restore_file() self.FNAME: %s\n" % self.FNAME
         )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def restore_object_data(self, ROP):
         """
@@ -301,7 +303,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
         elif ROP.object_name.endswith(".abspath"):
             if str(ROP.object) != orig_filename:
                 bareosfd.JobMessage(
-                    bJobMessageType["M_ERROR"],
+                    M_ERROR,
                     "bad restoreobject orig_fname: %s restoreobject_fname: %s\n"
                     % (orig_filename, repr(str(ROP.object))),
                 )
@@ -309,7 +311,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
             stored_length = int(os.path.splitext(ROP.object_name)[0])
             if str(ROP.object) != "a" * stored_length:
                 bareosfd.JobMessage(
-                    bJobMessageType["M_ERROR"],
+                    M_ERROR,
                     "bad long restoreobject %s does not match stored object\n"
                     % (ROP.object_name),
                 )
@@ -318,7 +320,7 @@ class BareosFdPluginLocalFilesetWithRestoreObjects(
                 100,
                 "not checking restoreobject: %s\n" % (type(ROP.object_name)),
             )
-        return bRCs["bRC_OK"]
+        return bRC_OK
 
     def get_sha256sum(self, filename):
         f = open(filename, "rb")

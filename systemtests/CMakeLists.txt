@@ -674,9 +674,14 @@ endif()
 
 if(TARGET python-fd)
   list(APPEND SYSTEM_TESTS "python-fd-plugin-local-fileset-test")
-  list(APPEND SYSTEM_TESTS "python-fd-plugin-libcloud-test")
 else()
   list(APPEND SYSTEM_TESTS_DISABLED "python-fd-plugin-local-fileset-test")
+endif()
+
+if(TARGET python-fd AND S3CMD)
+  list(APPEND SYSTEM_TESTS "python-fd-plugin-libcloud-test")
+else()
+  message("s3cmd not found, disabling python-fd-plugin-libcloud-test")
   list(APPEND SYSTEM_TESTS_DISABLED "python-fd-plugin-libcloud-test")
 endif()
 

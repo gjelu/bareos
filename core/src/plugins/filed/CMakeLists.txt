@@ -120,14 +120,14 @@ endif()
 
 
 if(${HAVE_GLUSTERFS})
-  add_library(gfapi-fd MODULE gfapi-fd.cc)
+  add_library(gfapi-fd MODULE gfapi/gfapi-fd.cc)
   set_target_properties(gfapi-fd PROPERTIES PREFIX "")
   install(TARGETS gfapi-fd DESTINATION ${plugindir} COMPONENT filedaemon)
   target_link_libraries(gfapi-fd gfapi)
 endif()
 
 if(${HAVE_TEST_PLUGIN})
-  add_library(test-plugin-fd MODULE test-plugin-fd.cc)
+  add_library(test-plugin-fd MODULE test-plugin/test-plugin-fd.cc)
   # do not prefix with "lib"
   set_target_properties(test-plugin-fd PROPERTIES PREFIX "")
   install(TARGETS test-plugin-fd DESTINATION ${plugindir} COMPONENT filedaemon)

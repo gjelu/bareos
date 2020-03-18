@@ -2,7 +2,7 @@
    BAREOS® - Backup Archiving REcovery Open Sourced
 
    Copyright (C) 2014-2016 Planets Communications B.V.
-   Copyright (C) 2014-2016 Bareos GmbH & Co. KG
+   Copyright (C) 2014-2020 Bareos GmbH & Co. KG
 
    This program is Free Software; you can redistribute it and/or
    modify it under the terms of version three of the GNU Affero General Public
@@ -25,7 +25,7 @@
  */
 #include "include/bareos.h"
 #include "filed/fd_plugins.h"
-#include "fd_common.h"
+#include "plugins/filed/fd_common.h"
 #include "lib/berrno.h"
 
 #include <rados/librados.h>

@@ -176,12 +176,12 @@ set(PYFILES
     python/pyfiles/BareosFdPluginBaseclass.py
     python/pyfiles/BareosFdPluginLocalFileset.py
     python/pyfiles/BareosFdWrapper.py
-    python/pyfiles/bareos-fd-ldap.py
-    python/pyfiles/BareosFdPluginLDAP.py
-    python/pyfiles/bareos-fd-ovirt.py
-    python/pyfiles/BareosFdPluginOvirt.py
-    python/pyfiles/bareos-fd-percona-xtrabackup.py
-    python/pyfiles/BareosFdPluginPerconaXtraBackup.py
+    python/ldap/bareos-fd-ldap.py
+    python/ldap/BareosFdPluginLDAP.py
+    python/ovirt/bareos-fd-ovirt.py
+    python/ovirt/BareosFdPluginOvirt.py
+    python/percona-xtrabackup/bareos-fd-percona-xtrabackup.py
+    python/percona-xtrabackup/BareosFdPluginPerconaXtraBackup.py
 )
 
 install(

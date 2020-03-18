@@ -47,17 +47,25 @@ endif()
 
 if(HAVE_PYTHON)
   configure_file(python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
-  add_custom_command( TARGET python-dir
+  add_custom_command(
+    TARGET python-dir
     POST_BUILD
     COMMENT "building python module pythonmodules/bareosdir.so"
     COMMAND ${PYTHON_EXECUTABLE} python/setup.py build
-    COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
-    COMMAND rm -R  ${CMAKE_CURRENT_BINARY_DIR}/build
-    DEPENDS python-dir
-    )
+    COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib
+            ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
+    COMMAND rm -R ${CMAKE_CURRENT_BINARY_DIR}/build DEPENDS python-dir
+  )
 
   add_test(NAME bareosdir-python-module
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test/bareosdir_test.py
-    )
-  set_property(TEST bareosdir-python-module PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/test" LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/../../lib)
+           COMMAND ${PYTHON_EXECUTABLE}
+                   ${CMAKE_CURRENT_SOURCE_DIR}/python/test/bareosdir_test.py
+  )
+  set_property(
+    TEST bareosdir-python-module
+    PROPERTY
+      ENVIRONMENT
+      "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/test"
+      LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/../../lib
+  )
 endif()

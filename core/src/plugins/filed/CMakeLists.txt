@@ -46,7 +46,11 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 add_library(bpipe-fd MODULE bpipe/bpipe-fd.cc)
 set_target_properties(bpipe-fd PROPERTIES PREFIX "")
-install(TARGETS bpipe-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+install(
+  TARGETS bpipe-fd
+  DESTINATION ${plugindir}
+  COMPONENT filedaemon
+)
 if(HAVE_WIN32 OR HAVE_DARWIN_OS)
   target_link_libraries(bpipe-fd bareos)
 endif()
@@ -58,20 +62,32 @@ if(HAVE_WIN32)
     mssqlvdi-fd PROPERTIES PREFIX "" DEFINE_SYMBOL "BUILDING_DLL"
   )
 
-  install(TARGETS mssqlvdi-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS mssqlvdi-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
   target_link_libraries(mssqlvdi-fd bareos)
 endif()
 
 if(${HAVE_CEPHFS})
   add_library(cephfs-fd MODULE cephfs/cephfs-fd.cc)
   set_target_properties(cephfs-fd PROPERTIES PREFIX "")
-  install(TARGETS cephfs-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS cephfs-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
 endif()
 
 if(${HAVE_CEPH_RADOS})
   add_library(rados-fd MODULE rados/rados-fd.cc)
   set_target_properties(rados-fd PROPERTIES PREFIX "")
-  install(TARGETS rados-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS rados-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
 endif()
 
 if(NOT HAVE_WIN32)
@@ -82,7 +98,11 @@ endif()
 if(HAVE_PYTHON)
   add_library(python-fd MODULE python/python-fd.cc)
   set_target_properties(python-fd PROPERTIES PREFIX "")
-  install(TARGETS python-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS python-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
   target_link_libraries(python-fd ${PYTHON_LIBRARIES} bareos)
 endif()
 
@@ -91,38 +111,50 @@ if(HAVE_PYTHON)
   target_link_libraries(bareos-fd-module-tester ${PYTHON_LIBRARIES} bareos)
 
   add_test(NAME bareosfd-python-module-tester
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bareos-fd-module-tester
-    )
-  set_property(TEST bareosfd-python-module-tester
-    PROPERTY ENVIRONMENT PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python/test/:${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/pyfiles)
+           COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bareos-fd-module-tester
+  )
+  set_property(
+    TEST bareosfd-python-module-tester
+    PROPERTY
+      ENVIRONMENT
+      PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python/test/:${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/pyfiles
+  )
 
 endif()
 
 if(HAVE_PYTHON)
   configure_file(python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
-  add_custom_command( TARGET python-fd
+  add_custom_command(
+    TARGET python-fd
     POST_BUILD
     COMMENT "building python module pythonmodules/bareosfd.so"
     COMMAND ${PYTHON_EXECUTABLE} python/setup.py build
-    COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
-    COMMAND rm -R  ${CMAKE_CURRENT_BINARY_DIR}/build
-    DEPENDS python-fd
-    )
+    COMMAND ${PYTHON_EXECUTABLE} python/setup.py install --install-lib
+            ${CMAKE_CURRENT_BINARY_DIR}/pythonmodules
+    COMMAND rm -R ${CMAKE_CURRENT_BINARY_DIR}/build DEPENDS python-fd
+  )
 
   add_test(NAME bareosfd-python-module
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test/bareosfd_test.py
-    )
-  set_property(TEST bareosfd-python-module PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/test" LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/../../lib)
+           COMMAND ${PYTHON_EXECUTABLE}
+                   ${CMAKE_CURRENT_SOURCE_DIR}/python/test/bareosfd_test.py
+  )
+  set_property(
+    TEST bareosfd-python-module
+    PROPERTY
+      ENVIRONMENT
+      "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/pythonmodules:${CMAKE_CURRENT_SOURCE_DIR}/python/test"
+      LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}/../../lib
+  )
 endif()
-
-
-
-
 
 if(${HAVE_GLUSTERFS})
   add_library(gfapi-fd MODULE gfapi/gfapi-fd.cc)
   set_target_properties(gfapi-fd PROPERTIES PREFIX "")
-  install(TARGETS gfapi-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS gfapi-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
   target_link_libraries(gfapi-fd gfapi)
 endif()
 
@@ -130,23 +162,27 @@ if(${HAVE_TEST_PLUGIN})
   add_library(test-plugin-fd MODULE test-plugin/test-plugin-fd.cc)
   # do not prefix with "lib"
   set_target_properties(test-plugin-fd PROPERTIES PREFIX "")
-  install(TARGETS test-plugin-fd DESTINATION ${plugindir} COMPONENT filedaemon)
+  install(
+    TARGETS test-plugin-fd
+    DESTINATION ${plugindir}
+    COMPONENT filedaemon
+  )
 endif()
 
 set(PYFILES
-    bareos-fd.py.template
-    bareos-fd-local-fileset.py
-    bareos-fd-mock-test.py
-    BareosFdPluginBaseclass.py
-    BareosFdPluginLocalFileset.py
-    BareosFdWrapper.py
-    bareos_fd_consts.py
-    bareos-fd-ldap.py
-    BareosFdPluginLDAP.py
-    bareos-fd-ovirt.py
-    BareosFdPluginOvirt.py
-    bareos-fd-percona-xtrabackup.py
-    BareosFdPluginPerconaXtraBackup.py
+    pyfiles/bareos-fd.py.template
+    pyfiles/bareos-fd-local-fileset.py
+    pyfiles/bareos-fd-mock-test.py
+    pyfiles/BareosFdPluginBaseclass.py
+    pyfiles/BareosFdPluginLocalFileset.py
+    pyfiles/BareosFdWrapper.py
+    pyfiles/bareos_fd_consts.py
+    pyfiles/bareos-fd-ldap.py
+    pyfiles/BareosFdPluginLDAP.py
+    pyfiles/bareos-fd-ovirt.py
+    pyfiles/BareosFdPluginOvirt.py
+    pyfiles/bareos-fd-percona-xtrabackup.py
+    pyfiles/BareosFdPluginPerconaXtraBackup.py
 )
 
 install(

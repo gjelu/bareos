@@ -165,8 +165,8 @@ macro(
     # else it is :
     # cephfs -> cephfs/cephfs-conf.d
 
-    string(REPLACE "-" "/" ${PLUGINPATH} ${PLUGIN})
-    string(APPEND ${PLUGINPATH} ${PLUGINPATH} "/" ${PLUGIN} "-conf.d")
+    string(REPLACE "-" "/" PLUGINPATH "${PLUGIN}")
+    string(APPEND PLUGINPATH ${PLUGINPATH} "/" ${PLUGIN} "-conf.d")
 
     message(STATUS "PLUGINPATH for PLUGIN ${PLUGIN} is ${PLUGINPATH}")
 

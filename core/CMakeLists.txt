@@ -707,18 +707,18 @@ if(${lmdb})
 endif()
 
 # info what the config files need to be installed PLUGINS  ############
-set(PLUGINS python-ldap-conf.d)
-list(APPEND PLUGINS python-ovirt-conf.d)
+set(PLUGINS python-ldap)
+list(APPEND PLUGINS python-ovirt)
 
 if(${HAVE_CEPHFS})
-  list(APPEND PLUGINS cephfs-conf.d)
+  list(APPEND PLUGINS cephfs)
 endif()
 if(${HAVE_CEPH_RADOS})
-  list(APPEND PLUGINS rados-conf.d)
+  list(APPEND PLUGINS rados)
 endif()
 
 if(${HAVE_GLUSTERFS})
-  list(APPEND PLUGINS gfapi-conf.d)
+  list(APPEND PLUGINS gfapi)
 endif()
 
 # BACKENDS  ####

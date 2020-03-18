@@ -5,6 +5,7 @@ module1 = Extension('bareossd',
                     include_dirs =  ['@CMAKE_CURRENT_SOURCE_DIR@/../..'],
                     libraries = ['bareos'],
                     library_dirs = ['@PROJECT_BINARY_DIR@/src/lib/']
+                    extra_compile_args=['-std=c++11'],
                     )
 
 setup (name = 'bareossd',

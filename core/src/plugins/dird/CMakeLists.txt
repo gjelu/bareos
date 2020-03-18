@@ -37,9 +37,9 @@ if(HAVE_PYTHON)
   target_link_libraries(python-dir ${PYTHON_LIBRARIES} bareos)
 
   set(PYFILES
-      pyfiles/bareos-dir.py.template pyfiles/bareos-dir-class-plugin.py
-      pyfiles/bareos_dir_consts.py pyfiles/BareosDirPluginBaseclass.py
-      pyfiles/BareosDirWrapper.py
+      python/pyfiles/bareos-dir.py.template python/pyfiles/bareos-dir-class-plugin.py
+      python/pyfiles/bareos_dir_consts.py python/pyfiles/BareosDirPluginBaseclass.py
+      python/pyfiles/BareosDirWrapper.py
   )
 
   install(FILES ${PYFILES} DESTINATION ${plugindir})

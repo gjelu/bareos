@@ -54,9 +54,11 @@ if(HAVE_PYTHON)
   target_link_libraries(python-sd ${PYTHON_LIBRARIES} bareos)
 
   set(PYFILES
-      pyfiles/bareos-sd-class-plugin.py pyfiles/bareos_sd_consts.py
-      pyfiles/BareosSdPluginBaseclass.py pyfiles/bareos-sd.py.template
-      pyfiles/BareosSdWrapper.py
+      python/pyfiles/bareos-sd-class-plugin.py
+      python/pyfiles/bareos_sd_consts.py
+      python/pyfiles/BareosSdPluginBaseclass.py
+      python/pyfiles/bareos-sd.py.template
+      python/pyfiles/BareosSdWrapper.py
   )
 
   install(FILES ${PYFILES} DESTINATION ${plugindir})

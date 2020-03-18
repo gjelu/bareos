@@ -170,19 +170,19 @@ if(${HAVE_TEST_PLUGIN})
 endif()
 
 set(PYFILES
-    pyfiles/bareos-fd.py.template
-    pyfiles/bareos-fd-local-fileset.py
-    pyfiles/bareos-fd-mock-test.py
-    pyfiles/BareosFdPluginBaseclass.py
-    pyfiles/BareosFdPluginLocalFileset.py
-    pyfiles/BareosFdWrapper.py
-    pyfiles/bareos_fd_consts.py
-    pyfiles/bareos-fd-ldap.py
-    pyfiles/BareosFdPluginLDAP.py
-    pyfiles/bareos-fd-ovirt.py
-    pyfiles/BareosFdPluginOvirt.py
-    pyfiles/bareos-fd-percona-xtrabackup.py
-    pyfiles/BareosFdPluginPerconaXtraBackup.py
+    python/pyfiles/bareos-fd.py.template
+    python/pyfiles/bareos-fd-local-fileset.py
+    python/pyfiles/bareos-fd-mock-test.py
+    python/pyfiles/BareosFdPluginBaseclass.py
+    python/pyfiles/BareosFdPluginLocalFileset.py
+    python/pyfiles/BareosFdWrapper.py
+    python/pyfiles/bareos_fd_consts.py
+    python/pyfiles/bareos-fd-ldap.py
+    python/pyfiles/BareosFdPluginLDAP.py
+    python/pyfiles/bareos-fd-ovirt.py
+    python/pyfiles/BareosFdPluginOvirt.py
+    python/pyfiles/bareos-fd-percona-xtrabackup.py
+    python/pyfiles/BareosFdPluginPerconaXtraBackup.py
 )
 
 install(

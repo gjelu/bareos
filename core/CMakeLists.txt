@@ -166,7 +166,7 @@ include(CTest)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
   set(Readline_ROOT_DIR /usr/local/opt/readline)
-  set(CMAKE_FIND_FRAMEWORK NEVER)
+  set(Intl_ROOT_DIR /usr/local/opt/gettext)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

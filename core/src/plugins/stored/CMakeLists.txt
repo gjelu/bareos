@@ -63,7 +63,7 @@ if(HAVE_PYTHON)
   install(FILES ${PYFILES} DESTINATION ${plugindir})
 endif()
 
-if(HAVE_PYTHON AND NOT HAVE_WIN32)
+if(HAVE_PYTHON AND NOT HAVE_WIN32 AND NOT HAVE_DARWIN_OS)
   configure_file(python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py)
   add_custom_command(
     TARGET python-sd

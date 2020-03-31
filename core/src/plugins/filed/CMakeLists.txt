@@ -117,18 +117,16 @@ set(PYFILES
     bareos-fd-libcloud.py
     BareosFdPluginLibcloud.py
     BareosLibcloudApi.py
-    bareos_libcloud_api/bucket_explorer.py
-    bareos_libcloud_api/debug.py
-    bareos_libcloud_api/get_libcloud_driver.py
-    bareos_libcloud_api/__init__.py
-    bareos_libcloud_api/mtime.py
-    bareos_libcloud_api/process_base.py
-    bareos_libcloud_api/queue_message.py
-    bareos_libcloud_api/worker.py
 )
 
 install(
   FILES ${PYFILES}
+  DESTINATION ${plugindir}
+  COMPONENT filedaemon
+)
+
+install(
+  DIRECTORY bareos_libcloud_api
   DESTINATION ${plugindir}
   COMPONENT filedaemon
 )

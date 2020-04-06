@@ -1417,6 +1417,7 @@ echo "This is a meta package to install a full bareos system" > %{buildroot}%{_d
 %defattr(-, root, root)
 %{plugin_dir}/bareos-fd-libcloud.py*
 %{plugin_dir}/BareosFdPluginLibcloud.py*
+%{plugin_dir}/BareosLibcloudApi.py*
 %dir %{plugin_dir}/bareos_libcloud_api
 %{plugin_dir}/bareos_libcloud_api/*
 

@@ -2,7 +2,7 @@
    BAREOS® - Backup Archiving REcovery Open Sourced
 
    Copyright (C) 2004-2012 Free Software Foundation Europe e.V.
-   Copyright (C) 2015-2016 Bareos GmbH & Co. KG
+   Copyright (C) 2015-2020 Bareos GmbH & Co. KG
 
    This program is Free Software; you can redistribute it and/or
    modify it under the terms of version three of the GNU Affero General Public
@@ -32,6 +32,7 @@
 #include "stored/stored_globals.h"
 #include "stored/acquire.h"
 #include "stored/device.h"
+#include "stored/device_control_record.h"
 #include "stored/jcr_private.h"
 #include "lib/berrno.h"
 #include "lib/bsock.h"
@@ -375,8 +376,8 @@ static bool DespoolData(DeviceControlRecord* dcr, bool commit)
          "Bytes/second\n"),
        despool_elapsed / 3600, despool_elapsed % 3600 / 60,
        despool_elapsed % 60,
-       edit_uint64_with_suffix(
-           jcr->impl->dcr->job_spool_size / despool_elapsed, ec1));
+       edit_uint64_with_suffix(jcr->impl->dcr->job_spool_size / despool_elapsed,
+                               ec1));
 
   dcr->block = block; /* reset block */
 

@@ -538,10 +538,9 @@ static void SendBlockedStatus(Device* dev, StatusPacket* sp)
       sendit(msg, len, sp);
       break;
     case BST_WAITING_FOR_SYSOP: {
-      DeviceControlRecord* dcr;
       bool found_jcr = false;
       dev->Lock();
-      foreach_dlist (dcr, dev->attached_dcrs) {
+      for (auto dcr : dev->attached_dcrs) {
         if (dcr->jcr->JobStatus == JS_WaitMount) {
           len = Mmsg(
               msg,
@@ -598,7 +597,6 @@ static void SendBlockedStatus(Device* dev, StatusPacket* sp)
 static void SendDeviceStatus(Device* dev, StatusPacket* sp)
 {
   int len;
-  DeviceControlRecord* dcr = NULL;
   bool found = false;
   PoolMem msg(PM_MESSAGE);
 
@@ -643,7 +641,7 @@ static void SendDeviceStatus(Device* dev, StatusPacket* sp)
   len = Mmsg(msg, _("Attached Jobs: "));
   sendit(msg, len, sp);
   dev->Lock();
-  foreach_dlist (dcr, dev->attached_dcrs) {
+  for (auto dcr : dev->attached_dcrs) {
     if (dcr->jcr) {
       if (found) {
         len = Mmsg(msg, ",%d", (int)dcr->jcr->JobId);

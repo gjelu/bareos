@@ -308,7 +308,7 @@ static void ListDevices(JobControlRecord* jcr,
                      "    Media type:  %s\n"),
                    dev->print_name(), state, dev->VolHdr.VolumeName,
                    dev->pool_name[0] ? dev->pool_name : "*unknown*",
-                   dev->device->media_type);
+                   dev->device_resource->media_type);
         sendit(msg, len, sp);
       } else {
         len = Mmsg(
@@ -393,7 +393,7 @@ static void ListVolumes(StatusPacket* sp, const char* devicenames)
     Device* dev = vol->dev;
 
     if (dev) {
-      if (devicenames && !NeedToListDevice(devicenames, dev->device)) {
+      if (devicenames && !NeedToListDevice(devicenames, dev->device_resource)) {
         continue;
       }
 
@@ -416,7 +416,7 @@ static void ListVolumes(StatusPacket* sp, const char* devicenames)
     Device* dev = vol->dev;
 
     if (dev) {
-      if (devicenames && !NeedToListDevice(devicenames, dev->device)) {
+      if (devicenames && !NeedToListDevice(devicenames, dev->device_resource)) {
         continue;
       }
 
@@ -626,7 +626,7 @@ static void SendDeviceStatus(Device* dev, StatusPacket* sp)
       "  %sOPENED %sTAPE %sLABEL %sMALLOC %sAPPEND %sREAD %sEOT %sWEOT %sEOF "
       "%sNEXTVOL %sSHORT %sMOUNTED\n",
       dev->IsOpen() ? "" : "!", dev->IsTape() ? "" : "!",
-      dev->IsLabeled() ? "" : "!", BitIsSet(ST_MALLOC, dev->state) ? "" : "!",
+      dev->IsLabeled() ? "" : "!", BitIsSet(ST_ALLOCATED, dev->state) ? "" : "!",
       dev->CanAppend() ? "" : "!", dev->CanRead() ? "" : "!",
       dev->AtEot() ? "" : "!", BitIsSet(ST_WEOT, dev->state) ? "" : "!",
       dev->AtEof() ? "" : "!", BitIsSet(ST_NEXTVOL, dev->state) ? "" : "!",
